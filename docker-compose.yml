@@ -46,6 +46,12 @@ services:
     build: ./backend/model2-iceberg-service
     ports:
       - "8002:8002"
+    environment:
+      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@postgres:5432/himdrishti
+    volumes:
+      - ./ml/artifacts:/app/artifacts
+    depends_on:
+      - postgres
 
   model3:
     build: ./backend/model3-routing-service
