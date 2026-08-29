@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgis/postgis:15-3.4
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: himdrishti
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d
+
+  api-gateway:
+    build: ./backend/api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/himdrishti
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - postgres
+
+  model1:
+    build: ./backend/model1-seaice-service
+    ports:
+      - "8001:8001"
+
+  model2:
+    build: ./backend/model2-iceberg-service
+    ports:
+      - "8002:8002"
+
+  model3:
+    build: ./backend/model3-routing-service
+    ports:
+      - "8003:8003"
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_MAPBOX_TOKEN=${MAPBOX_TOKEN}
+
+volumes:
+  pgdata:
