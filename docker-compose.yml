@@ -5,20 +5,30 @@ services:
     image: postgis/postgis:15-3.4
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: himdrishti
     ports:
-      - "5432:5432"
+      - "5435:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./db/migrations:/docker-entrypoint-initdb.d
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: "HimDrishti_Admin!"
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
 
   api-gateway:
     build: ./backend/api-gateway
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/himdrishti
+      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@postgres:5432/himdrishti
       - JWT_SECRET=${JWT_SECRET}
     depends_on:
       - postgres
