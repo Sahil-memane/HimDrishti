@@ -37,6 +37,10 @@ services:
     build: ./backend/model1-seaice-service
     ports:
       - "8001:8001"
+    environment:
+      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@postgres:5432/himdrishti
+    volumes:
+      - ./ml/artifacts:/app/artifacts
 
   model2:
     build: ./backend/model2-iceberg-service
