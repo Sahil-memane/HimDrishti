@@ -43,12 +43,24 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     )
 
 
+# Simple in-memory rate limiting stub (IP-based)
+login_attempts = {}
+
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     """Authenticate and return JWT access + refresh tokens."""
+    # Stub rate limiter: max 5 attempts per email (in a real app, use IP + Redis)
+    attempts = login_attempts.get(payload.email, 0)
+    if attempts >= 5:
+        raise HTTPException(status_code=429, detail="Too many login attempts")
+
     user = db.query(User).filter(User.email == payload.email).first()
     if not user or not verify_password(payload.password, user.password_hash):
+        login_attempts[payload.email] = attempts + 1
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    
+    # Reset on success
+    login_attempts[payload.email] = 0
 
     token_data = {"sub": str(user.user_id), "role": user.role}
     access_token = create_access_token(token_data)
