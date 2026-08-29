@@ -1,0 +1,9 @@
+fastapi==0.115.0
+uvicorn==0.30.0
+networkx==3.2.1
+sqlalchemy==2.0.35
+geoalchemy2==0.15.2
+psycopg2-binary==2.9.9
+pydantic==2.9.0
+pydantic-settings==2.5.0
+shapely==2.0.2

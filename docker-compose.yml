@@ -57,6 +57,10 @@ services:
     build: ./backend/model3-routing-service
     ports:
       - "8003:8003"
+    environment:
+      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@postgres:5432/himdrishti
+    depends_on:
+      - postgres
 
   frontend:
     build: ./frontend
