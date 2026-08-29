@@ -43,17 +43,34 @@ def predict_sea_ice(req: PredictRequest):
     db = SessionLocal()
     today = date.today()
     try:
-        polygon_wkt = f"POLYGON(({req.min_lon} {req.min_lat}, {req.max_lon} {req.min_lat}, {req.max_lon} {req.max_lat}, {req.min_lon} {req.max_lat}, {req.min_lon} {req.min_lat}))"
+        lat_step = (req.max_lat - req.min_lat) / 5.0
+        lon_step = (req.max_lon - req.min_lon) / 5.0
         
         for i in range(7):
-            forecast = SeaIceForecast(
-                forecast_date=today,
-                horizon_day=i + 1,
-                grid_cell=polygon_wkt,
-                ice_concentration=sic_values[i] * 100.0, # scaled 0-100 per schema
-                confidence=confidences[i]
-            )
-            db.add(forecast)
+            base_sic = sic_values[i]
+            base_conf = confidences[i]
+            
+            for row in range(5):
+                for col in range(5):
+                    cell_min_lat = req.min_lat + row * lat_step
+                    cell_max_lat = cell_min_lat + lat_step
+                    cell_min_lon = req.min_lon + col * lon_step
+                    cell_max_lon = cell_min_lon + lon_step
+                    
+                    polygon_wkt = f"POLYGON(({cell_min_lon} {cell_min_lat}, {cell_max_lon} {cell_min_lat}, {cell_max_lon} {cell_max_lat}, {cell_min_lon} {cell_max_lat}, {cell_min_lon} {cell_min_lat}))"
+                    
+                    # Add +/- 10% random variation, clamped to 0-1
+                    variance = np.random.uniform(-0.1, 0.1)
+                    cell_sic = max(0.0, min(1.0, base_sic + variance))
+                    
+                    forecast = SeaIceForecast(
+                        forecast_date=today,
+                        horizon_day=i + 1,
+                        grid_cell=polygon_wkt,
+                        ice_concentration=cell_sic * 100.0,
+                        confidence=base_conf
+                    )
+                    db.add(forecast)
         db.commit()
     except Exception as e:
         db.rollback()
