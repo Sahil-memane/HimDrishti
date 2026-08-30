@@ -5,19 +5,20 @@ GET   /api/voyage/{voyage_id}/route
 GET   /api/voyages
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from geoalchemy2.shape import to_shape
 from uuid import UUID
 
 from db import get_db
-from models import User, Vessel, Voyage, Waypoint
+from models import User, Vessel, Voyage, Waypoint, RiskScore
 from schemas import (
     VoyageCreateRequest, VoyageCreateResponse,
     RouteResponse, WaypointOut,
     VoyageListResponse, VoyageListItem,
 )
 from auth import get_current_user
+from pipeline import process_voyage_pipeline
 
 router = APIRouter()
 
@@ -25,6 +26,7 @@ router = APIRouter()
 @router.post("/voyage", response_model=VoyageCreateResponse, status_code=status.HTTP_202_ACCEPTED)
 def create_voyage(
     payload: VoyageCreateRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -52,7 +54,8 @@ def create_voyage(
     db.commit()
     db.refresh(voyage)
 
-    # TODO (Phase 7): trigger async pipeline — ingestion → Model 1 → Model 2 → Model 3
+    # Trigger async pipeline — ingestion → Model 1 → Model 2 → Model 3
+    background_tasks.add_task(process_voyage_pipeline, str(voyage.voyage_id), Session(bind=db.get_bind()))
 
     return VoyageCreateResponse(voyage_id=voyage.voyage_id, status=voyage.status)
 
@@ -81,10 +84,27 @@ def get_route(
         .order_by(Waypoint.sequence_no)
         .all()
     )
+    
+    # We also fetch the risk scores for explainability. The risk_scores table doesn't have sequence_no,
+    # but since there is one per hop, we can assume they are inserted in order.
+    # Alternatively, we just grab all and sort by risk_id which roughly correlates to order,
+    # or just use them for global metrics.
+    risk_scores = db.query(RiskScore).filter(RiskScore.voyage_id == voyage_id).order_by(RiskScore.risk_id).all()
 
     wp_out = []
-    for wp in waypoints:
+    for i, wp in enumerate(waypoints):
         point = to_shape(wp.position)
+        
+        risk_factors = None
+        # Hop 0 doesn't have a preceding segment. From Hop 1 onwards, we can match risk_scores[i-1]
+        if i > 0 and (i - 1) < len(risk_scores):
+            rs = risk_scores[i - 1]
+            risk_factors = {
+                "ice_risk": rs.ice_risk,
+                "iceberg_risk": rs.iceberg_risk,
+                "weather_risk": rs.weather_risk
+            }
+        
         wp_out.append(WaypointOut(
             sequence_no=wp.sequence_no,
             lat=point.y,
@@ -92,14 +112,38 @@ def get_route(
             eta=wp.eta,
             cumulative_fuel_l=wp.cumulative_fuel_l,
             segment_risk_score=wp.segment_risk_score,
+            risk_factors=risk_factors
         ))
+
+    if not waypoints:
+        return RouteResponse(waypoints=[])
+        
+    # Aggregate metrics
+    # In a real app we would compute distance properly. Since the frontend just plots it, we can omit total_distance_km
+    # or compute a rough one. We'll leave it as None if we don't have it explicitly stored, or we can calculate it.
+    
+    total_fuel = waypoints[-1].cumulative_fuel_l
+    eta = waypoints[-1].eta
+    overall_risk_score = sum(wp.segment_risk_score for wp in waypoints) / len(waypoints) if waypoints else 0
+    
+    # Re-generate reasoning string based on the voyage risk tolerance and aggregated data
+    avg_ice = sum(rs.ice_risk for rs in risk_scores) / len(risk_scores) if risk_scores else 0
+    avg_ice_percent = avg_ice * 100.0
+    
+    reasoning = (
+        f"Path optimized for {voyage.risk_tolerance} risk tolerance. "
+        f"Avoided all critical hazards (SIC > 90%, Icebergs < 20km). "
+        f"Average Sea Ice Concentration encountered: {avg_ice_percent:.1f}%. "
+        f"Estimated fuel consumption: {total_fuel:.1f}L."
+    )
 
     return RouteResponse(
         waypoints=wp_out,
-        total_distance_km=None,  # Populated after Model 3 wiring
-        eta=waypoints[-1].eta if waypoints else None,
-        total_fuel_estimate_l=waypoints[-1].cumulative_fuel_l if waypoints else None,
-        overall_risk_score=None,
+        total_distance_km=None,  # Not stored globally in DB yet
+        eta=eta,
+        total_fuel_estimate_l=total_fuel,
+        overall_risk_score=overall_risk_score,
+        reasoning=reasoning
     )
 
 

@@ -68,6 +68,7 @@ class WaypointOut(BaseModel):
     eta: datetime
     cumulative_fuel_l: Optional[float] = None
     segment_risk_score: Optional[float] = None
+    risk_factors: Optional[dict] = None
 
 
 class RouteResponse(BaseModel):
@@ -76,6 +77,7 @@ class RouteResponse(BaseModel):
     eta: Optional[datetime] = None
     total_fuel_estimate_l: Optional[float] = None
     overall_risk_score: Optional[float] = None
+    reasoning: Optional[str] = None
 
 
 class VoyageListItem(BaseModel):
