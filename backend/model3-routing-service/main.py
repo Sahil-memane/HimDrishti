@@ -4,6 +4,7 @@ from datetime import datetime, timezone, timedelta
 from db import SessionLocal, Waypoint, RiskScore
 from grid import build_navigation_grid, get_closest_node, haversine
 from engine import attach_attributes, run_astar_search
+from llm_service import generate_route_recommendation
 
 app = FastAPI(title="Model 3: A* Routing Engine")
 
@@ -17,6 +18,27 @@ class RouteRequest(BaseModel):
     speed_knots: float
     fuel_consumption_lph: float
     departure_time: str
+
+
+@app.get("/route/{voyage_id}/recommendation")
+def route_recommendation(voyage_id: str):
+
+    try:
+
+        result = generate_route_recommendation(
+            voyage_id
+        )
+
+        return result
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+
 
 @app.get("/health")
 def health():
