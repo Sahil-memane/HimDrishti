@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HimDrishti Intelligence - Decision Support Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@500&amp;family=Manrope:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#aee9ff",
+                        "on-tertiary": "#203243",
+                        "on-tertiary-container": "#405365",
+                        "error-container": "#93000a",
+                        "secondary-fixed-dim": "#77d1ff",
+                        "tertiary-fixed": "#d1e4fb",
+                        "surface-container": "#14212d",
+                        "surface-dim": "#071420",
+                        "surface-container-high": "#1f2b38",
+                        "background": "#071420",
+                        "error": "#ffb4ab",
+                        "primary-fixed": "#b6ebff",
+                        "on-error-container": "#ffdad6",
+                        "on-surface": "#d7e4f5",
+                        "primary-fixed-dim": "#49d6ff",
+                        "inverse-on-surface": "#25323f",
+                        "inverse-primary": "#00677f",
+                        "inverse-surface": "#d7e4f5",
+                        "surface-tint": "#49d6ff",
+                        "on-tertiary-fixed": "#091d2d",
+                        "on-secondary-container": "#002d3f",
+                        "outline-variant": "#3c494e",
+                        "on-primary-fixed-variant": "#004e60",
+                        "secondary": "#77d1ff",
+                        "on-secondary-fixed": "#001e2c",
+                        "tertiary-container": "#b3c6db",
+                        "surface-variant": "#293643",
+                        "outline": "#869398",
+                        "on-surface-variant": "#bbc9cf",
+                        "on-secondary": "#003549",
+                        "on-background": "#d7e4f5",
+                        "surface-container-highest": "#293643",
+                        "surface-container-lowest": "#030f1b",
+                        "secondary-container": "#249bcb",
+                        "on-primary": "#003543",
+                        "on-secondary-fixed-variant": "#004d68",
+                        "on-primary-fixed": "#001f28",
+                        "tertiary-fixed-dim": "#b5c8de",
+                        "on-tertiary-fixed-variant": "#36485a",
+                        "secondary-fixed": "#c2e8ff",
+                        "surface-container-low": "#101d29",
+                        "surface-bright": "#2e3a48",
+                        "tertiary": "#cfe2f8",
+                        "on-error": "#690005",
+                        "surface": "#071420",
+                        "primary-container": "#35d4ff",
+                        "on-primary-container": "#00586d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "container-padding": "24px",
+                        "unit": "4px",
+                        "gutter": "24px",
+                        "margin-desktop": "40px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Manrope"],
+                        "data-mono": ["JetBrains Mono"],
+                        "label-caps": ["Inter"],
+                        "display-lg": ["Manrope"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background-color: rgba(8, 28, 44, 0.6); /* Midnight Blue at 60% */
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(174, 233, 255, 0.1); /* Ice Blue at 10% */
+        }
+        .glass-panel-active {
+            background-color: rgba(8, 28, 44, 0.8);
+            backdrop-filter: blur(32px);
+            border: 1px solid rgba(174, 233, 255, 0.3);
+            box-shadow: 0px 0px 12px 0px rgba(174, 233, 255, 0.4);
+        }
+        .glow-text {
+            text-shadow: 0 0 8px rgba(174, 233, 255, 0.6);
+        }
+        
+        /* Map specific styles */
+        .map-bg {
+            background-color: #06131F;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(174, 233, 255, 0.05) 0%, transparent 60%),
+                linear-gradient(rgba(174, 233, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(174, 233, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+        }
+
+        .route-line {
+            filter: drop-shadow(0 0 8px rgba(174, 233, 255, 0.8));
+        }
+
+        /* Hide scrollbar for clean dashboard look */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md h-screen overflow-hidden flex">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-screen w-16 md:w-64 bg-surface-container dark:bg-surface-container border-r border-outline-variant backdrop-blur-2xl shadow-sm z-50 flex flex-col h-full py-unit-4 px-unit-2">
+<!-- Header / Brand -->
+<div class="flex items-center gap-4 px-4 py-6 mb-4">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0 border border-outline-variant relative overflow-hidden">
+<img alt="System Operator Profile" class="absolute inset-0 w-full h-full object-cover opacity-80" data-alt="A highly detailed, ultra-realistic rendering of a sophisticated maritime navigation system logo. The logo features abstract geometric shapes in deep navy and vibrant cyan, representing icebreakers and polar routes. The lighting is crisp and cinematic, emphasizing the sleek, modern, high-tech aesthetic of the HimDrishti Antarctic Command interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAhutzF5wPBHu6avEPb97tiR95W5BDjRY0OXNpwaYrC22Md-qtoB1rhYeeceXuuRJh7Hyb6SEVqptmInaQtNOtM02Qs1U9OZWC6e40OLC6mXR4rrsQ1RDF9TmoTJ57dzEOS3vYO9xy3RumCekqwkEJ9PGHPHfr9QVLzjMm7h15GEUbHKMzQfp49vFg7nZo7bmHnqC-FgtI7WRS6tMyNy8ZZZzRiZvBEnNpHZBLynISYzht5pBNYmIr"/>
+</div>
+<div class="hidden md:block">
+<h1 class="font-display-lg text-display-lg text-primary text-xl tracking-tight leading-tight">HimDrishti</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant">Antarctic Command</p>
+</div>
+</div>
+<!-- Navigation Tabs -->
+<ul class="flex flex-col gap-2 flex-grow">
+<!-- Active Tab: Dashboard -->
+<li>
+<a class="flex items-center gap-4 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-lg font-bold transition-colors active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-caps text-label-caps hidden md:block">Dashboard</span>
+</a>
+</li>
+<!-- Inactive Tabs -->
+<li>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">sailing</span>
+<span class="font-label-caps text-label-caps hidden md:block">Voyage</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">weather_mix</span>
+<span class="font-label-caps text-label-caps hidden md:block">Forecast</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg active:scale-95 duration-150 relative" href="#">
+<span class="material-symbols-outlined">warning</span>
+<span class="font-label-caps text-label-caps hidden md:block">Alerts</span>
+<!-- Alert indicator -->
+<span class="absolute top-3 right-4 w-2 h-2 rounded-full bg-error animate-pulse"></span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-caps text-label-caps hidden md:block">Route Analysis</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-caps text-label-caps hidden md:block">History</span>
+</a>
+</li>
+</ul>
+<!-- Bottom Settings/User -->
+<div class="mt-auto pt-4 border-t border-outline-variant/50">
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-caps text-label-caps hidden md:block">System Config</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 ml-16 md:ml-64 relative w-full h-full bg-background map-bg">
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 left-16 md:left-64 z-40 flex justify-between items-center px-gutter h-16 bg-surface/60 dark:bg-surface/60 backdrop-blur-2xl border-b border-outline-variant shadow-md">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<h2 class="font-headline-md text-headline-md font-bold text-primary tracking-wide hidden sm:block">HimDrishti Intelligence</h2>
+<h2 class="font-headline-md text-headline-md font-bold text-primary tracking-wide sm:hidden">HDI</h2>
+<span class="px-2 py-1 bg-surface-container-high border border-outline-variant rounded text-on-surface-variant font-data-mono text-xs ml-4">LIVE - UTC 14:32:09</span>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-2 md:gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-opacity p-2 cursor-pointer active:scale-95">
+<span class="material-symbols-outlined text-[20px]">sync</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-opacity p-2 cursor-pointer active:scale-95 relative">
+<span class="material-symbols-outlined text-[20px]">update</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-opacity p-2 cursor-pointer active:scale-95 relative mr-2">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-error border border-background"></span>
+</button>
+<div class="w-8 h-8 rounded-full border border-outline-variant overflow-hidden cursor-pointer hover:border-primary transition-colors">
+<img alt="User Settings" class="w-full h-full object-cover" data-alt="A highly detailed portrait avatar of a maritime system operator. The lighting is cinematic and high-key, illuminating a face focused on a glowing console. The aesthetic is modern, professional, and slightly futuristic, fitting within a dark-mode deep navy and cyan color scheme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBl6LvzDRg0Sg3JhhnImDl01wAVfLX_3Pyv_xX3Me2YI-aZBSHL-qyV4P5HFoREZq-EW6mif_0HkyX-5VSLuV6rqUvfdJsw1PAKBk-tPUoT0onAPaDBsrDu-lglWeO22LUAGyYxYOATXJ3xDU94pEWB2oVYQkwFK3_j27IGHft8AT2q1apMTjj5kZ_JkeEXhRwZH0kb7dP6Z2Y_hmmw3UFpYa0tEZ1kRRs_OIMch7si6qaAg6lEI_1f"/>
+</div>
+</div>
+</header>
+<!-- STATIC MAP CANVAS (Full Bleed) -->
+<div class="absolute inset-0 pt-16 z-0 overflow-hidden" data-location="Antarctica" style="">
+<!-- Map Background Image (Simulating detailed ice coastlines and dark ocean) -->
+<div class="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-screen" data-alt="A highly detailed, static top-down satellite map view of the Antarctic coastline. The ocean is a deep, dark navy blue (#06131F). The ice shelves and coastline are rendered in stark, crisp white and ice-blue tones. The visual style is scientific, high-contrast, and data-dense, designed as a base layer for high-stakes maritime navigation in a cinematic dark-mode UI. No text or labels." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCEdGSp3fYMIdFQSeINJ2iTZw9kAFXq-AT-HAVHPuNqJ_IFr4GPtsrc2MB19CJ80qzrjEVqu2OYF3ScSn9EabeNlusuW0Kf_m4nPdWgmrdZnBdVMnZZ849XPFK2Lb9DhRyYkbUfJEkXh4pGPfJMs6dqKr3ocmzcNOzmQSeUFNXXLcw2twm0hkmsXJhWX7wPGPhj8ZBQ4EbvpqZUkmoHdIH0c_qWqTsRlP1AAePrxdjsVKu13Gm7MwAG')"></div>
+<!-- SVG Map Overlays -->
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="xMidYMid slice" viewbox="0 0 1000 800">
+<defs>
+<!-- Route Glow Filter -->
+<filter height="140%" id="cyanGlow" width="140%" x="-20%" y="-20%">
+<fegaussianblur result="blur" stddeviation="4"></fegaussianblur>
+<fecomposite in="SourceGraphic" in2="blur" operator="over"></fecomposite>
+</filter>
+<!-- Hazard Area Pattern -->
+<pattern height="10" id="hazardPattern" patterntransform="rotate(45)" patternunits="userSpaceOnUse" width="10">
+<line opacity="0.4" stroke="#93000a" stroke-width="2" x1="0" x2="0" y1="0" y2="10"></line>
+</pattern>
+</defs>
+<!-- Confidence Buffer (Subtle transparent polygon around route) -->
+<path d="M 150 650 L 300 550 L 450 600 L 600 450 L 750 350 L 850 200 L 900 220 L 780 380 L 620 480 L 470 630 L 320 580 L 170 680 Z" fill="rgba(174, 233, 255, 0.05)" stroke="rgba(174, 233, 255, 0.1)" stroke-width="1"></path>
+<!-- The Balanced Route (Glowing Cyan Polyline) -->
+<path class="route-line" d="M 160 665 L 310 565 L 460 615 L 610 465 L 765 365 L 875 210" fill="none" filter="url(#cyanGlow)" stroke="#aee9ff" stroke-dasharray="1000" stroke-dashoffset="0" stroke-width="3"></path>
+<!-- Waypoints on Route -->
+<circle cx="160" cy="665" fill="#071420" filter="url(#cyanGlow)" r="4" stroke="#aee9ff" stroke-width="2"></circle>
+<circle cx="460" cy="615" fill="#071420" r="4" stroke="#aee9ff" stroke-width="2"></circle>
+<circle cx="610" cy="465" fill="#071420" r="4" stroke="#aee9ff" stroke-width="2"></circle>
+<circle cx="875" cy="210" fill="#aee9ff" filter="url(#cyanGlow)" r="6"></circle>
+<!-- Current Position Vessel Marker -->
+<polygon fill="#aee9ff" filter="url(#cyanGlow)" points="310,555 315,570 305,570" transform="rotate(30 310 565)"></polygon>
+<!-- Radar sweep effect base -->
+<circle cx="310" cy="565" fill="none" r="30" stroke="rgba(174, 233, 255, 0.3)" stroke-dasharray="2 4" stroke-width="1"></circle>
+<!-- Sea-Ice Concentration (SIC) Heatmap Overlays (Abstracted blobs) -->
+<path class="transition-opacity duration-500 opacity-60" d="M 50 400 Q 150 300 250 450 T 400 350 T 200 600 Z" fill="url(#hazardPattern)" id="layer-risk"></path>
+<path d="M 600 200 Q 700 150 800 250 T 950 150 T 750 300 Z" fill="rgba(209, 228, 251, 0.15)" filter="blur(20px)" id="layer-sic"></path>
+<!-- Iceberg Markers -->
+<g id="layer-icebergs">
+<!-- Iceberg 1 -->
+<circle cx="400" cy="500" fill="rgba(255,255,255,0.02)" r="40" stroke="rgba(255,255,255,0.1)" stroke-dasharray="4 4" stroke-width="1"></circle>
+<polygon fill="#ffffff" points="400,495 405,505 395,505"></polygon>
+<!-- Iceberg 2 -->
+<circle cx="650" cy="350" fill="rgba(255,255,255,0.02)" r="25" stroke="rgba(255,255,255,0.1)" stroke-dasharray="4 4" stroke-width="1"></circle>
+<polygon fill="#ffffff" points="650,347 653,353 647,353"></polygon>
+<!-- Iceberg 3 (Close proximity) -->
+<circle cx="720" cy="420" fill="rgba(147, 0, 10, 0.05)" r="60" stroke="rgba(147, 0, 10, 0.3)" stroke-dasharray="4 4" stroke-width="1"></circle>
+<polygon fill="#ffb4ab" points="720,415 725,425 715,425"></polygon>
+</g>
+</svg>
+</div>
+<!-- FLOATING UI PANELS (Z-index above map) -->
+<div class="absolute inset-0 pt-16 p-gutter z-10 pointer-events-none flex flex-col justify-between">
+<!-- TOP ROW -->
+<div class="flex justify-between items-start pointer-events-auto">
+<!-- Map Layers Toggle (Top Left) -->
+<div class="glass-panel rounded-xl p-4 w-48 flex flex-col gap-3 shadow-lg">
+<h3 class="font-label-caps text-label-caps text-outline uppercase tracking-wider mb-1">Overlays</h3>
+<label class="flex items-center justify-between cursor-pointer group">
+<span class="font-body-sm text-sm text-on-surface-variant group-hover:text-on-surface transition-colors">Sea-Ice (SIC)</span>
+<div class="relative inline-block w-8 h-4 rounded-full bg-surface-container-highest border border-outline-variant">
+<input checked="" class="peer sr-only" type="checkbox"/>
+<span class="absolute inset-y-0 left-0 w-4 h-4 bg-outline-variant rounded-full transition-all peer-checked:bg-primary peer-checked:left-4"></span>
+</div>
+</label>
+<label class="flex items-center justify-between cursor-pointer group">
+<span class="font-body-sm text-sm text-on-surface-variant group-hover:text-on-surface transition-colors">Icebergs</span>
+<div class="relative inline-block w-8 h-4 rounded-full bg-surface-container-highest border border-outline-variant">
+<input checked="" class="peer sr-only" type="checkbox"/>
+<span class="absolute inset-y-0 left-0 w-4 h-4 bg-outline-variant rounded-full transition-all peer-checked:bg-primary peer-checked:left-4"></span>
+</div>
+</label>
+<label class="flex items-center justify-between cursor-pointer group">
+<span class="font-body-sm text-sm text-error group-hover:text-error-container transition-colors">Risk Zones</span>
+<div class="relative inline-block w-8 h-4 rounded-full bg-surface-container-highest border border-outline-variant">
+<input class="peer sr-only" type="checkbox"/>
+<span class="absolute inset-y-0 left-0 w-4 h-4 bg-outline-variant rounded-full transition-all peer-checked:bg-error peer-checked:left-4"></span>
+</div>
+</label>
+</div>
+<!-- Vessel Quick Stats (Top Right) -->
+<div class="glass-panel rounded-xl p-4 flex flex-col gap-2 shadow-lg items-end text-right">
+<h3 class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Vessel Telemetry</h3>
+<div class="flex items-baseline gap-2">
+<span class="font-data-mono text-data-mono text-[#FFFFFF] text-xl">14.2</span>
+<span class="text-on-surface-variant text-xs">KTS</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-data-mono text-data-mono text-[#FFFFFF] text-lg">045°</span>
+<span class="text-on-surface-variant text-xs">HDG</span>
+</div>
+</div>
+</div>
+<!-- BOTTOM AREA -->
+<div class="flex flex-col md:flex-row justify-between items-end gap-6 pointer-events-auto">
+<!-- Live Route Metrics (Bottom Left) -->
+<div class="glass-panel-active rounded-xl p-6 w-full md:w-80 shadow-2xl flex flex-col gap-5">
+<div class="flex justify-between items-center border-b border-outline-variant/30 pb-3">
+<h2 class="font-headline-md text-lg text-primary m-0">Active Route</h2>
+<span class="px-2 py-1 rounded bg-primary/10 border border-primary/30 text-primary font-label-caps text-[10px] tracking-widest flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                            TRACKING
+                        </span>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="flex flex-col">
+<span class="font-label-caps text-[10px] text-outline mb-1">ETA TARGET</span>
+<span class="font-data-mono text-[#FFFFFF] text-xl glow-text">4d 12h</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-caps text-[10px] text-outline mb-1">EST. FUEL</span>
+<span class="font-data-mono text-[#FFFFFF] text-xl">84,500 <span class="text-xs text-on-surface-variant">L</span></span>
+</div>
+</div>
+<div class="flex flex-col bg-surface-container-highest/50 p-3 rounded-lg border border-outline-variant/50">
+<div class="flex justify-between items-center mb-1">
+<span class="font-label-caps text-[10px] text-outline">OVERALL RISK INDEX</span>
+<span class="font-data-mono text-primary text-sm font-bold">LOW</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[24%] rounded-full shadow-[0_0_8px_rgba(174,233,255,0.8)]"></div>
+</div>
+<div class="flex justify-between mt-1">
+<span class="font-data-mono text-[10px] text-on-surface-variant">0.00</span>
+<span class="font-data-mono text-[10px] text-[#FFFFFF]">0.24</span>
+<span class="font-data-mono text-[10px] text-on-surface-variant">1.00</span>
+</div>
+</div>
+</div>
+<!-- Route Optimization Preference (Bottom Center/Right) -->
+<div class="glass-panel rounded-xl p-6 w-full md:w-96 shadow-xl flex flex-col gap-4">
+<h3 class="font-label-caps text-label-caps text-outline uppercase tracking-wider mb-2">Optimization Parameter</h3>
+<!-- Segmented Slider/Toggles -->
+<div class="flex bg-surface-container-highest p-1 rounded-lg border border-outline-variant w-full">
+<button class="flex-1 py-2 font-label-caps text-xs text-on-surface-variant hover:text-on-surface transition-colors rounded-md text-center">SAFEST</button>
+<button class="flex-1 py-2 font-label-caps text-xs bg-primary/20 text-primary border border-primary/30 rounded-md text-center shadow-[0_0_10px_rgba(174,233,255,0.2)]">BALANCED</button>
+<button class="flex-1 py-2 font-label-caps text-xs text-on-surface-variant hover:text-on-surface transition-colors rounded-md text-center">EFFICIENT</button>
+</div>
+<!-- AI Rationale Box -->
+<div class="mt-2 flex flex-col gap-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[16px]">psychology</span>
+<h4 class="font-label-caps text-[10px] text-primary tracking-widest">AI RATIONALE</h4>
+</div>
+<p class="font-body-md text-sm text-on-surface-variant leading-relaxed">
+                            Selected route accepts +0.12 risk delta to bypass significant SIC consolidation at sector 4G. Saves approx 4,200L fuel vs Safest route while maintaining acceptable structural safety margins.
+                        </p>
+</div>
+<button class="mt-2 w-full py-3 bg-primary text-on-primary font-bold font-label-caps text-xs rounded-lg hover:bg-primary-fixed transition-colors active:scale-95 shadow-[0_0_15px_rgba(174,233,255,0.3)]">
+                        COMMIT ROUTE
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Minimal interactive logic for UI demonstration
+        document.querySelectorAll('input[type="checkbox"]').forEach(toggle => {
+            toggle.addEventListener('change', (e) => {
+                const label = e.target.closest('label').querySelector('span').innerText.trim();
+                if(label === 'Sea-Ice (SIC)') {
+                    const layer = document.getElementById('layer-sic');
+                    if(layer) layer.style.opacity = e.target.checked ? '1' : '0';
+                }
+                if(label === 'Risk Zones') {
+                    const layer = document.getElementById('layer-risk');
+                    if(layer) layer.style.opacity = e.target.checked ? '0.6' : '0';
+                }
+                if(label === 'Icebergs') {
+                    const layer = document.getElementById('layer-icebergs');
+                    if(layer) layer.style.opacity = e.target.checked ? '1' : '0';
+                }
+            });
+        });
+    </script>
+</body></html>

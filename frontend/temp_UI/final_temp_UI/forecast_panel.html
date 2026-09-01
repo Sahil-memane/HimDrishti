@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HimDrishti Intelligence - Forecast</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#cfe2f8",
+                        "surface": "#071420",
+                        "on-tertiary-container": "#405365",
+                        "outline-variant": "#3c494e",
+                        "error": "#ffb4ab",
+                        "surface-container-highest": "#293643",
+                        "tertiary-container": "#b3c6db",
+                        "primary-fixed": "#b6ebff",
+                        "on-secondary-container": "#002d3f",
+                        "on-error": "#690005",
+                        "outline": "#869398",
+                        "on-primary": "#003543",
+                        "on-error-container": "#ffdad6",
+                        "on-surface-variant": "#bbc9cf",
+                        "secondary-fixed-dim": "#77d1ff",
+                        "error-container": "#93000a",
+                        "surface-container-low": "#101d29",
+                        "on-primary-fixed": "#001f28",
+                        "inverse-on-surface": "#25323f",
+                        "on-tertiary-fixed-variant": "#36485a",
+                        "surface-tint": "#49d6ff",
+                        "on-tertiary": "#203243",
+                        "surface-container": "#14212d",
+                        "on-surface": "#d7e4f5",
+                        "on-background": "#d7e4f5",
+                        "tertiary-fixed": "#d1e4fb",
+                        "on-secondary-fixed": "#001e2c",
+                        "on-tertiary-fixed": "#091d2d",
+                        "on-primary-container": "#00586d",
+                        "surface-container-high": "#1f2b38",
+                        "secondary-container": "#249bcb",
+                        "on-secondary": "#003549",
+                        "inverse-surface": "#d7e4f5",
+                        "primary": "#aee9ff",
+                        "secondary": "#77d1ff",
+                        "primary-container": "#35d4ff",
+                        "surface-bright": "#2e3a48",
+                        "primary-fixed-dim": "#49d6ff",
+                        "secondary-fixed": "#c2e8ff",
+                        "surface-dim": "#071420",
+                        "tertiary-fixed-dim": "#b5c8de",
+                        "on-secondary-fixed-variant": "#004d68",
+                        "surface-variant": "#293643",
+                        "inverse-primary": "#00677f",
+                        "background": "#071420",
+                        "on-primary-fixed-variant": "#004e60",
+                        "surface-container-lowest": "#030f1b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "gutter": "24px",
+                        "container-padding": "24px",
+                        "margin-desktop": "40px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "display-lg": ["Manrope"],
+                        "body-lg": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "headline-md": ["Manrope"],
+                        "headline-lg": ["Manrope"],
+                        "data-mono": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Custom Range Slider */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #49d6ff;
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(73, 214, 255, 0.6);
+            margin-top: -8px; 
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(134, 147, 152, 0.3);
+            border-radius: 2px;
+        }
+        
+        .glow-fx {
+            box-shadow: 0px 0px 12px 0px rgba(174, 233, 255, 0.4);
+        }
+        .animate-pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md overflow-hidden antialiased">
+<!-- Full-bleed background -->
+<div class="fixed inset-0 w-full h-full bg-cover bg-center z-0 before:content-[''] before:absolute before:inset-0 before:bg-surface/40" data-alt="A breathtaking, cinematic high-resolution aerial photograph of the Antarctic ice shelf at dusk. The scene is dominated by deep, oppressive navies of the freezing ocean contrasting with the stark, crystalline icy whites of the immense glaciers. The lighting is low and dramatic, casting long shadows and creating a hyper-realistic, hostile yet awe-inspiring environment suitable for a mission-critical tactical interface backdrop." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDF8N5xboyfeWugDvEU1IGb_SHR278G_9oangL3fXvqOIVF7Kpr27aO7j0yggjayKIiNP6ioNnQLOw9b-gY3bnTzhDfD9DYpH782JYLlK835La50t6kl_brsc4AlqUMz7E5tCm8QzzK62LpDrfjxbfCmkBgUNDS4k4yqmyT7dNhkAdL97evzPeBdakvI2_DFcE53ZNeeiXxRG4U3epb72k0ZGb94vDH_yvdlNOgOW6n7zBo6rmBVMzv')"></div>
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-screen w-16 md:w-64 bg-surface-container dark:bg-surface-container border-r border-outline-variant backdrop-blur-2xl shadow-sm z-50 flex flex-col h-full py-unit-4 px-unit-2">
+<div class="flex items-center gap-4 px-4 py-6 mb-8 border-b border-outline-variant/30 hidden md:flex">
+<div class="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">public</span>
+</div>
+<div>
+<h1 class="font-display-lg text-headline-md text-primary tracking-tight" style="font-size: 1.25rem; line-height: 1.2;">HimDrishti</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant">Antarctic Command</p>
+</div>
+</div>
+<div class="flex flex-col gap-2 flex-grow">
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 duration-150 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">dashboard</span>
+<span class="font-label-caps text-label-caps hidden md:block mt-1">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 duration-150 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">sailing</span>
+<span class="font-label-caps text-label-caps hidden md:block mt-1">Voyage</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-lg font-bold active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">weather_mix</span>
+<span class="font-label-caps text-label-caps hidden md:block mt-1">Forecast</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 duration-150 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">warning</span>
+<span class="font-label-caps text-label-caps hidden md:block mt-1">Alerts</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 duration-150 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">analytics</span>
+<span class="font-label-caps text-label-caps hidden md:block mt-1">Route Analysis</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 duration-150 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">history</span>
+<span class="font-label-caps text-label-caps hidden md:block mt-1">History</span>
+</a>
+</div>
+<div class="mt-auto hidden md:flex items-center gap-3 px-4 py-4 mt-8">
+<img class="h-8 w-8 rounded-full border border-outline-variant object-cover" data-alt="A small, stylized profile avatar for a high-tech system operator. The image is a sleek, abstract geometric icon in shades of cyan and deep navy, suggesting advanced AI or secure military personnel. High contrast, clean lines, minimalist design, suitable for a dark-mode mission control interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBMRhdwC2VROj2zLaRAbn27ZK5yxZPcab_ACwQ64LEGZJhuAkf4t3FEQSJBaWLsVA_em1Nnu4qbCbzY2LMUQxDKNiGfOaedxTnBU9Mk78i3b7uF65C9IthtompBK-daDscnY8c1xFjkf8_Qvwn6O8b9TpKk7m0oqjXET_9w4pOI_84cn2ryxr8MuvnHfSgO3yjN-lzXzpN6IxdvqRxm_yTc7Zk0-e7vpfqUyVmYHw8EASNCCPPDpQ9B"/>
+<div>
+<p class="font-data-mono text-data-mono text-on-surface text-[11px] leading-tight">SYS_OP_774</p>
+<p class="font-label-caps text-label-caps text-primary/70 text-[9px]">SEC_LVL_ALPHA</p>
+</div>
+</div>
+</nav>
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 left-16 md:left-64 z-40 flex justify-between items-center px-gutter h-16 bg-surface/60 dark:bg-surface/60 backdrop-blur-2xl border-b border-outline-variant shadow-md">
+<div class="flex items-center gap-4">
+<h2 class="font-headline-md text-headline-md font-bold text-primary tracking-tight">HimDrishti Intelligence</h2>
+<div class="hidden lg:flex items-center gap-2 px-3 py-1 bg-surface-container-highest/50 rounded-full border border-outline-variant/50 ml-4">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse-slow"></span>
+<span class="font-data-mono text-data-mono text-[10px] text-primary">SAT_LINK_ACTIVE</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<button class="text-on-surface-variant hover:text-primary transition-opacity cursor-pointer flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">sync</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-opacity cursor-pointer flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">update</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-opacity cursor-pointer flex items-center justify-center relative">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full border border-surface"></span>
+</button>
+<div class="w-px h-6 bg-outline-variant mx-2"></div>
+<img class="h-8 w-8 rounded-full border border-outline-variant/50 object-cover cursor-pointer hover:border-primary transition-colors" data-alt="A small circular icon representing user settings in a high-tech environment. The icon features a glowing cyan gear symbol set against a dark metallic, deep navy background. Crisp, vector-style rendering, perfectly suited for a dark mode interface, emphasizing precision and control." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6BEpB4s_3et5mgI9M5NCaagBXSpe1JU7qNjeUrqUVBQPQUARhhx_ZUTKINion04kAoAQHqsBZZveLDuCt1bBeDZtQZ6ElgrJdb2v5jMVTVzDNfgK9ej3DVMv4ch4nKNLxBpIj3f0vvci49_ZNnYf5I7_WXB5iPDuH1ClDyGACgIudMnz54dXj21U79DoblySifPvLLVlOt89EZPVaKzOzEf1ODh9VfLLUnjgClWLh0ZinqftcxMSb"/>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="relative z-10 pt-16 pl-16 md:pl-64 h-screen w-full flex flex-col pointer-events-none">
+<!-- Ambient Data Overlays (Decorative) -->
+<div class="absolute top-24 left-80 pointer-events-none hidden lg:block">
+<div class="flex flex-col gap-1">
+<span class="font-label-caps text-label-caps text-primary/60">SECTOR 7G ANALYSIS</span>
+<span class="font-data-mono text-data-mono text-xl text-on-surface">ICE_DENSITY: 84.3%</span>
+<span class="font-data-mono text-data-mono text-sm text-error mt-1 flex items-center gap-2">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                    FRACTURE DETECTED
+                </span>
+</div>
+</div>
+<!-- Interactive UI elements go here, enable pointer events -->
+<div class="flex-grow w-full h-full relative pointer-events-auto">
+<!-- Map marker -->
+<div class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center group cursor-crosshair">
+<div class="w-12 h-12 rounded-full border border-primary/40 bg-primary/10 flex items-center justify-center relative before:absolute before:inset-0 before:rounded-full before:border before:border-primary before:animate-ping before:opacity-20">
+<span class="material-symbols-outlined text-primary glow-fx" style="font-variation-settings: 'FILL' 1;">my_location</span>
+</div>
+<div class="mt-3 bg-surface-container/90 backdrop-blur-md border border-primary/30 px-3 py-2 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+<p class="font-data-mono text-data-mono text-xs text-primary mb-1">LAT: 77°50'S | LON: 166°40'E</p>
+<p class="font-label-caps text-label-caps text-on-surface-variant">MCMURDO STATION PROXIMITY</p>
+</div>
+</div>
+<!-- Forecast Control Panel -->
+<div class="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-3xl px-4">
+<div class="bg-surface/80 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl p-6 flex flex-col gap-6" style="box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);">
+<!-- Header -->
+<div class="flex justify-between items-center border-b border-outline-variant/40 pb-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">timeline</span>
+<h3 class="font-label-caps text-label-caps text-on-surface tracking-widest text-sm">7-DAY FORECAST TIMELINE</h3>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex flex-col items-end">
+<span class="font-label-caps text-label-caps text-on-surface-variant text-[10px]">PREDICTIVE CONFIDENCE</span>
+<span class="font-data-mono text-data-mono text-primary font-bold" id="confidence-readout">94.2%</span>
+</div>
+<div class="w-px h-8 bg-outline-variant/40"></div>
+<button class="flex items-center gap-2 px-3 py-1.5 rounded bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-colors group">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse-slow"></span>
+<span class="font-data-mono text-data-mono text-xs text-primary group-hover:text-white">AUTO-PLAY</span>
+</button>
+</div>
+</div>
+<!-- Slider Control -->
+<div class="py-4 relative w-full">
+<input class="w-full appearance-none bg-transparent focus:outline-none" id="forecast-slider" max="7" min="1" type="range" value="1"/>
+<!-- Timeline Labels -->
+<div class="flex justify-between w-full px-1 mt-4">
+<div class="flex flex-col items-center gap-1 cursor-pointer">
+<span class="w-1 h-2 bg-primary/60 rounded-full"></span>
+<span class="font-data-mono text-data-mono text-[10px] text-primary">DAY 1</span>
+</div>
+<div class="flex flex-col items-center gap-1 cursor-pointer">
+<span class="w-1 h-2 bg-outline-variant rounded-full"></span>
+<span class="font-data-mono text-data-mono text-[10px] text-on-surface-variant">DAY 2</span>
+</div>
+<div class="flex flex-col items-center gap-1 cursor-pointer">
+<span class="w-1 h-2 bg-outline-variant rounded-full"></span>
+<span class="font-data-mono text-data-mono text-[10px] text-on-surface-variant">DAY 3</span>
+</div>
+<div class="flex flex-col items-center gap-1 cursor-pointer">
+<span class="w-1 h-2 bg-outline-variant rounded-full"></span>
+<span class="font-data-mono text-data-mono text-[10px] text-on-surface-variant">DAY 4</span>
+</div>
+<div class="flex flex-col items-center gap-1 cursor-pointer">
+<span class="w-1 h-2 bg-outline-variant rounded-full"></span>
+<span class="font-data-mono text-data-mono text-[10px] text-on-surface-variant">DAY 5</span>
+</div>
+<div class="flex flex-col items-center gap-1 cursor-pointer">
+<span class="w-1 h-2 bg-outline-variant rounded-full"></span>
+<span class="font-data-mono text-data-mono text-[10px] text-on-surface-variant">DAY 6</span>
+</div>
+<div class="flex flex-col items-center gap-1 cursor-pointer">
+<span class="w-1 h-2 bg-outline-variant rounded-full"></span>
+<span class="font-data-mono text-data-mono text-[10px] text-on-surface-variant">DAY 7</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Simple interaction script to update the confidence readout based on slider position
+        document.addEventListener('DOMContentLoaded', () => {
+            const slider = document.getElementById('forecast-slider');
+            const readout = document.getElementById('confidence-readout');
+            
+            // Linear decay from 94.2 to 42.8
+            const startConf = 94.2;
+            const endConf = 42.8;
+            const steps = 6; // 7 days = 6 intervals
+            
+            slider.addEventListener('input', (e) => {
+                const day = parseInt(e.target.value);
+                const currentConf = startConf - ((startConf - endConf) / steps) * (day - 1);
+                
+                readout.textContent = `${currentConf.toFixed(1)}%`;
+                
+                // Color shift based on confidence
+                if(currentConf > 80) {
+                    readout.className = 'font-data-mono text-data-mono text-primary font-bold';
+                } else if (currentConf > 60) {
+                    readout.className = 'font-data-mono text-data-mono text-tertiary-container font-bold';
+                } else {
+                    readout.className = 'font-data-mono text-data-mono text-error font-bold';
+                }
+            });
+        });
+    </script>
+</body></html>

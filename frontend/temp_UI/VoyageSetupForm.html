@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HimDrishti - Voyage Setup</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Hanken Grotesk & JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&amp;family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                            "secondary-fixed": "#dbe4ea",
+                            "tertiary": "#ffd7f5",
+                            "error-container": "#93000a",
+                            "on-secondary": "#293236",
+                            "surface-bright": "#2c3a4d",
+                            "primary": "#4afafa",
+                            "outline-variant": "#3b4949",
+                            "abyssal-navy": "#051425",
+                            "primary-container": "#00dddd",
+                            "surface-container-high": "#1d2b3d",
+                            "on-error": "#690005",
+                            "tertiary-fixed-dim": "#ffabf3",
+                            "on-secondary-fixed-variant": "#3f484d",
+                            "surface-container-lowest": "#010f20",
+                            "on-error-container": "#ffdad6",
+                            "error": "#ffb4ab",
+                            "on-surface-variant": "#bacac9",
+                            "on-tertiary-container": "#7d3878",
+                            "on-tertiary": "#551353",
+                            "glacial-white": "#d5e3fc",
+                            "on-tertiary-fixed-variant": "#6f2c6b",
+                            "on-secondary-container": "#adb6bc",
+                            "background": "#051425",
+                            "inverse-surface": "#d5e3fc",
+                            "primary-fixed": "#49f9f9",
+                            "on-primary": "#003737",
+                            "surface-container-highest": "#283648",
+                            "inverse-primary": "#006a6a",
+                            "on-primary-fixed-variant": "#004f4f",
+                            "surface": "#051425",
+                            "on-tertiary-fixed": "#380038",
+                            "frost-gray": "#839493",
+                            "surface-variant": "#283648",
+                            "outline": "#849493",
+                            "biolume-magenta": "#b300b3",
+                            "surface-tint": "#00dddd",
+                            "active-cyan": "#00fbfb",
+                            "inverse-on-surface": "#233143",
+                            "on-secondary-fixed": "#141d21",
+                            "on-primary-container": "#005d5d",
+                            "secondary": "#bfc8ce",
+                            "tertiary-fixed": "#ffd7f5",
+                            "tertiary-container": "#ffabf3",
+                            "on-background": "#d5e3fc",
+                            "surface-container-low": "#0e1c2e",
+                            "hazard-orange": "#ff8c00",
+                            "surface-dim": "#051425",
+                            "on-primary-fixed": "#002020",
+                            "surface-container": "#122032",
+                            "secondary-fixed-dim": "#bfc8ce",
+                            "primary-fixed-dim": "#00dddd",
+                            "secondary-container": "#3f484d",
+                            "on-surface": "#d5e3fc"
+                    },
+                    "borderRadius": {
+                            "DEFAULT": "0.125rem",
+                            "lg": "0.25rem",
+                            "xl": "0.5rem",
+                            "full": "0.75rem"
+                    },
+                    "spacing": {
+                            "margin-edge": "32px",
+                            "panel-gap": "16px",
+                            "gutter": "24px",
+                            "container-padding": "24px",
+                            "unit": "4px"
+                    },
+                    "fontFamily": {
+                            "body-md": ["Hanken Grotesk"],
+                            "data-mono": ["JetBrains Mono"],
+                            "label-sm": ["JetBrains Mono"],
+                            "headline-md": ["Hanken Grotesk"],
+                            "headline-lg": ["Hanken Grotesk"],
+                            "display-lg": ["Hanken Grotesk"],
+                            "body-lg": ["Hanken Grotesk"],
+                            "headline-lg-mobile": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                            "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                            "data-mono": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                            "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "700"}],
+                            "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                            "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                            "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                            "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                            "headline-lg-mobile": ["26px", {"lineHeight": "32px", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Custom HUD Inputs */
+        .hud-input {
+            @apply bg-surface-container-low/50 border-0 border-b-2 border-outline-variant focus:border-active-cyan focus:ring-0 px-2 py-1 text-data-mono font-data-mono text-inverse-surface placeholder-frost-gray transition-colors;
+        }
+        
+        /* Slide-in Animation for HUD Panel */
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in {
+            animation: slideInRight 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Ambient Radar Grid Background Pattern */
+        .radar-grid {
+            background-image: 
+                linear-gradient(to right, rgba(0, 251, 251, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 251, 251, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        
+        /* Scrollbar hiding for HUD */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface h-screen w-screen overflow-hidden font-body-md selection:bg-active-cyan/30">
+<!-- Background Layer: Satellite Tactical Map -->
+<div class="absolute inset-0 z-0">
+<div class="bg-cover bg-center w-full h-full opacity-60 mix-blend-screen" data-alt="A highly detailed, ultra-high-resolution satellite view of the Antarctic continent rendered as a tactical digital map. Deep navy blue ocean surrounds intricate ice shelves depicted in stark white and glacial cyan. A subtle radar grid overlay with faint vector lines crisscrosses the map, suggesting advanced navigation systems in a dark, atmospheric maritime command interface." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB3DV5lpLZFH_6-XhhYLKb2_d-DScNEMSP4l15uWOLEEazVlfHX6irHoBMZcMWAn39AnjtBnhczN1Tu8xYtkxQH2KH02ffp1Bpty1zc0CpGhsCtQW0u-T0iT48Z0v7ayACsLkWFxF5Qp-yC_Ym1u-Sd-xsGSecBNmrvhDJiNa2BOTMnKyX78537RV6xhhW5THHOzR_mCVf82sFSevfEPWU7Ege1JLLJO7R7y-e6q-J7gQmZ76A7W82P')"></div>
+<div class="absolute inset-0 bg-abyssal-navy/70 mix-blend-multiply pointer-events-none"></div>
+<div class="absolute inset-0 radar-grid pointer-events-none"></div>
+<!-- Subtle pulsing radar sweep effect -->
+<div class="absolute top-1/2 left-1/3 w-[800px] h-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-active-cyan/10 animate-[spin_10s_linear_infinite]" style="background: conic-gradient(from 0deg, transparent 70%, rgba(0, 251, 251, 0.1) 100%);"></div>
+</div>
+<!-- Overlay 1: Top Navigation Bar (Shared Component Reference) -->
+<nav class="fixed top-0 w-full z-50 flex justify-between items-center px-margin-edge h-20 bg-surface/80 backdrop-blur-xl border-b border-glacial-white/10">
+<!-- Brand -->
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-active-cyan text-3xl" style="font-variation-settings: 'FILL' 1;">sailing</span>
+<span class="font-display-lg text-display-lg font-bold tracking-tighter text-active-cyan">HimDrishti</span>
+</div>
+<!-- Navigation Links (Desktop) -->
+<div class="hidden md:flex gap-8">
+<a class="text-active-cyan font-bold border-b-2 border-active-cyan pb-1 text-body-md font-body-md" href="#">Dashboard</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-300 text-body-md font-body-md" href="#">History</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-300 text-body-md font-body-md" href="#">Alerts</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-300 text-body-md font-body-md" href="#">Docs</a>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-4 text-primary">
+<button class="hover:text-glacial-white transition-colors cursor-pointer active:scale-95">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="hover:text-glacial-white transition-colors cursor-pointer active:scale-95">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<img alt="Command Officer Avatar" class="w-10 h-10 rounded-full border border-active-cyan/30 object-cover" data-alt="A stylized, low-poly avatar of a command officer wearing a high-tech naval headset, rendered in shades of dark navy and active cyan, sitting perfectly in a circular profile picture frame against a dark background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJ3QkKfZhxxNIIjlBkyc9Tzm3zJZJBUyGvtdQMQfwX9MIYyMUyty-4UhyWYJb6spEK6kb1MRw_MDS2xTkTkK299QoNuJvVMtJrGq_CAy7su8zobcGvf5hzz9gilr82hKvJ9LGLmt3XbRC9rR4Ir_xykGo-tKSZWT_JYIDM_tt9j2vdVolsdTzVLZ76JeHi1f7J6cyv7IoyipT9aCVYjLAcke4-ZBVD2KitizuYyZUIi7oLrQb1u5AR"/>
+</div>
+</nav>
+<!-- Overlay 2: HUD Panel (Voyage Setup) -->
+<main class="fixed right-0 top-20 bottom-12 w-full md:w-[480px] bg-surface-container-low/90 backdrop-blur-2xl border-l border-glacial-white/10 z-40 flex flex-col animate-slide-in shadow-[-10px_0_30px_rgba(0,0,0,0.5)]">
+<!-- Panel Header -->
+<header class="p-gutter border-b border-glacial-white/10 shrink-0 bg-surface-container/50">
+<h1 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-glacial-white mb-2">Initialize Voyage Parameters</h1>
+<p class="font-data-mono text-data-mono text-active-cyan flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-active-cyan animate-pulse"></span>
+                SECURE ROUTING PROTOCOL V2.4
+            </p>
+</header>
+<!-- Panel Body (Scrollable) -->
+<div class="flex-1 overflow-y-auto no-scrollbar p-gutter flex flex-col gap-8">
+<!-- Section A: Coordinates -->
+<section class="flex flex-col gap-4">
+<h2 class="font-label-sm text-label-sm text-frost-gray uppercase tracking-widest flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">my_location</span>
+                    Waypoint Data
+                </h2>
+<div class="grid grid-cols-2 gap-panel-gap">
+<!-- Origin -->
+<div class="flex flex-col gap-1 p-3 bg-surface-container-highest/30 rounded border border-glacial-white/5 relative overflow-hidden group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-variant group-focus-within:bg-active-cyan transition-colors"></div>
+<label class="font-label-sm text-label-sm text-on-surface-variant ml-2">ORIGIN LAT</label>
+<input class="hud-input w-full ml-2" type="text" value="-77.8463"/>
+</div>
+<div class="flex flex-col gap-1 p-3 bg-surface-container-highest/30 rounded border border-glacial-white/5 relative overflow-hidden group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-variant group-focus-within:bg-active-cyan transition-colors"></div>
+<label class="font-label-sm text-label-sm text-on-surface-variant ml-2">ORIGIN LON</label>
+<input class="hud-input w-full ml-2" type="text" value="166.6682"/>
+</div>
+<!-- Destination -->
+<div class="flex flex-col gap-1 p-3 bg-surface-container-highest/30 rounded border border-glacial-white/5 relative overflow-hidden group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-variant group-focus-within:bg-hazard-orange transition-colors"></div>
+<label class="font-label-sm text-label-sm text-on-surface-variant ml-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">explore</span> DEST LAT
+                        </label>
+<input class="hud-input w-full ml-2" placeholder="Enter Lat..." type="text"/>
+</div>
+<div class="flex flex-col gap-1 p-3 bg-surface-container-highest/30 rounded border border-glacial-white/5 relative overflow-hidden group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-variant group-focus-within:bg-hazard-orange transition-colors"></div>
+<label class="font-label-sm text-label-sm text-on-surface-variant ml-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">explore</span> DEST LON
+                        </label>
+<input class="hud-input w-full ml-2" placeholder="Enter Lon..." type="text"/>
+</div>
+</div>
+</section>
+<!-- Section B: Vessel Constraints -->
+<section class="flex flex-col gap-4">
+<h2 class="font-label-sm text-label-sm text-frost-gray uppercase tracking-widest flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">directions_boat</span>
+                    Vessel Constraints
+                </h2>
+<div class="grid grid-cols-2 gap-panel-gap">
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant">MAX CRUISE SPEED (KTS)</label>
+<div class="relative">
+<input class="hud-input w-full pr-8" step="0.1" type="number" value="12.5"/>
+<span class="absolute right-2 top-2 font-data-mono text-data-mono text-frost-gray">KTS</span>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant">MIN FUEL RESERVE (%)</label>
+<div class="relative">
+<input class="hud-input w-full pr-8 text-hazard-orange" max="50" min="10" type="number" value="25"/>
+<span class="absolute right-2 top-2 font-data-mono text-data-mono text-frost-gray">%</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Section C: Temporal Matrix -->
+<section class="flex flex-col gap-4">
+<h2 class="font-label-sm text-label-sm text-frost-gray uppercase tracking-widest flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">schedule</span>
+                    Temporal Matrix
+                </h2>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant">T-ZERO DEPARTURE</label>
+<input class="hud-input w-full cursor-pointer" type="datetime-local"/>
+</div>
+</section>
+<!-- Section D: Risk Tolerance Knob (3D) -->
+<section class="flex flex-col gap-4 p-4 bg-surface-container/40 border border-glacial-white/10 rounded-lg backdrop-blur-sm relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-b from-transparent to-surface-container-highest/20 pointer-events-none"></div>
+<div class="flex justify-between items-center relative z-10">
+<h2 class="font-label-sm text-label-sm text-frost-gray uppercase tracking-widest flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">warning</span>
+                        Ice Risk Tolerance
+                    </h2>
+<span class="font-data-mono text-data-mono text-active-cyan" id="risk-value-display">MEDIUM</span>
+</div>
+<div class="flex flex-col items-center gap-2 relative z-10">
+<!-- 3D Shader Knob Injection -->
+<!-- STITCH_THREEJS_START:ANIMATION_27 class="w-32 h-32 mx-auto bg-transparent" -->
+<div class="w-32 h-32 mx-auto bg-transparent" style="display:block;">
+<script src="https://ajax.googleapis.com/ajax/libs/threejs/r125/three.min.js"></script>
+<div id="threejs-container-ANIMATION_27" style="width:100%;height:100%"></div>
+<script>
+(function() {
+  const container = document.getElementById('threejs-container-ANIMATION_27');
+  const devicePixelRatio = window.devicePixelRatio || 1;
+  
+const container = document.getElementById('threejs-container-ANIMATION_VOYAGE_HUD');
+if (container) {
+  const width = container.clientWidth || window.innerWidth;
+  const height = container.clientHeight || window.innerHeight;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer.setSize(width, height);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  container.appendChild(renderer.domElement);
+
+  // Lighting
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+  scene.add(ambientLight);
+  const pointLight = new THREE.PointLight(0x00ffff, 1, 10);
+  pointLight.position.set(2, 2, 2);
+  scene.add(pointLight);
+
+  // Knob Group
+  const knobGroup = new THREE.Group();
+  scene.add(knobGroup);
+
+  // Outer Ring (3D Look)
+  const outerGeo = new THREE.CylinderGeometry(1.2, 1.2, 0.2, 64);
+  const outerMat = new THREE.MeshPhongMaterial({ color: 0x1d2b3d, shininess: 50 });
+  const outerRing = new THREE.Mesh(outerGeo, outerMat);
+  outerRing.rotation.x = Math.PI / 2;
+  knobGroup.add(outerRing);
+
+  // Inner Knob
+  const innerGeo = new THREE.CylinderGeometry(1, 1, 0.3, 64);
+  const innerMat = new THREE.MeshPhongMaterial({ color: 0x0e1c2e, shininess: 80 });
+  const innerKnob = new THREE.Mesh(innerGeo, innerMat);
+  innerKnob.rotation.x = Math.PI / 2;
+  knobGroup.add(innerKnob);
+
+  // Indicator Bar
+  const barGeo = new THREE.BoxGeometry(0.1, 0.5, 0.1);
+  const barMat = new THREE.MeshStandardMaterial({ color: 0x00dddd, emissive: 0x00dddd, emissiveIntensity: 2 });
+  const bar = new THREE.Mesh(barGeo, barMat);
+  bar.position.set(0, 0.6, 0.2);
+  innerKnob.add(bar);
+
+  camera.position.z = 4;
+
+  let targetRotation = -Math.PI / 4; // LOW
+  let currentRotation = -Math.PI / 4;
+
+  window.addEventListener('updateRisk', (e) => {
+    const risk = e.detail.risk;
+    if (risk === 'LOW') {
+        targetRotation = -Math.PI / 4;
+        barMat.color.set(0x00dddd);
+        barMat.emissive.set(0x00dddd);
+    } else if (risk === 'MED') {
+        targetRotation = 0;
+        barMat.color.set(0xffabf3);
+        barMat.emissive.set(0xffabf3);
+    } else if (risk === 'HIGH') {
+        targetRotation = Math.PI / 4;
+        barMat.color.set(0xffb4ab);
+        barMat.emissive.set(0xffb4ab);
+    }
+  });
+
+  function animate() {
+    requestAnimationFrame(animate);
+    currentRotation += (targetRotation - currentRotation) * 0.1;
+    innerKnob.rotation.z = -currentRotation; // Adjust for 3D axis
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    const w = container.clientWidth || window.innerWidth;
+    const h = container.clientHeight || window.innerHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  });
+}
+
+})();
+</script>
+</div>
+<!-- STITCH_THREEJS_END:ANIMATION_27 -->
+<div class="flex justify-between w-full px-8 font-label-sm text-label-sm text-frost-gray mt-2">
+<button class="hover:text-glacial-white transition-colors focus:outline-none" onclick="document.getElementById('risk-value-display').innerText = 'LOW'">LOW</button>
+<button class="hover:text-active-cyan transition-colors text-active-cyan focus:outline-none" onclick="document.getElementById('risk-value-display').innerText = 'MED'">MED</button>
+<button class="hover:text-hazard-orange transition-colors focus:outline-none" onclick="document.getElementById('risk-value-display').innerText = 'HIGH'">HIGH</button>
+</div>
+</div>
+</section>
+</div>
+<!-- Panel Footer (Action) -->
+<footer class="p-gutter border-t border-glacial-white/10 bg-surface/90 shrink-0">
+<button class="w-full bg-active-cyan hover:bg-primary-fixed-dim text-on-primary font-headline-md text-headline-md py-4 px-6 flex items-center justify-center gap-3 rounded transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,251,251,0.4)] active:scale-[0.98] group">
+<span class="material-symbols-outlined group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform">rocket_launch</span>
+                COMPUTE ROUTE
+            </button>
+</footer>
+</main>
+<!-- Overlay 3: Status Footer Bar (Shared Component Reference) -->
+<footer class="fixed bottom-0 w-full z-50 flex justify-between items-center px-margin-edge h-12 bg-surface-container-lowest/95 backdrop-blur-md border-t border-glacial-white/20">
+<div class="font-label-sm text-label-sm text-frost-gray flex items-center gap-4">
+<span>© 2024 HIMDRISHTI DEEP-SEA EXPEDITION</span>
+</div>
+<div class="font-data-mono text-data-mono flex items-center gap-6 text-frost-gray">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-active-cyan"></span>
+                API Gateway: <span class="text-active-cyan">STABLE</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-active-cyan"></span>
+                Models: <span class="text-active-cyan">ACTIVE</span>
+</div>
+<div class="flex items-center gap-2">
+                System Status: 🟢
+            </div>
+<div class="hidden md:flex gap-4 opacity-70">
+<span>Lat: 78.2232 N</span>
+<span>Lon: 15.6267 E</span>
+</div>
+</div>
+</footer>
+<script>
+        // Set default datetime-local to current time + 1 hour
+        document.addEventListener('DOMContentLoaded', () => {
+            const dateInput = document.querySelector('input[type="datetime-local"]');
+            if (dateInput) {
+                const now = new Date();
+                now.setHours(now.getHours() + 1);
+                // Format: YYYY-MM-DDThh:mm
+                const tzOffset = now.getTimezoneOffset() * 60000; // offset in milliseconds
+                const localISOTime = (new Date(now - tzOffset)).toISOString().slice(0, 16);
+                dateInput.value = localISOTime;
+            }
+        });
+    </script>
+</body></html>

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HimDrishti Login Screen</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@100..800&amp;family=Hanken+Grotesk:wght@100..900&amp;family=JetBrains+Mono:wght@100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-container": "#b300b3",
+                        "outline": "#839493",
+                        "on-primary-fixed": "#002020",
+                        "on-tertiary": "#5b005b",
+                        "secondary-container": "#424a50",
+                        "on-error-container": "#ffdad6",
+                        "primary-fixed": "#00fbfb",
+                        "inverse-on-surface": "#233144",
+                        "tertiary-fixed": "#ffd7f5",
+                        "error": "#ffb4ab",
+                        "primary": "#ffffff",
+                        "on-surface-variant": "#b9cac9",
+                        "on-secondary": "#293137",
+                        "tertiary-container": "#ffd7f5",
+                        "surface-tint": "#00dddd",
+                        "surface-dim": "#051425",
+                        "tertiary-fixed-dim": "#ffabf3",
+                        "secondary-fixed": "#dbe4ea",
+                        "inverse-primary": "#006a6a",
+                        "background": "#051425",
+                        "on-primary": "#003737",
+                        "on-tertiary-fixed-variant": "#810081",
+                        "surface-container-high": "#1d2b3d",
+                        "on-background": "#d5e3fc",
+                        "on-primary-fixed-variant": "#004f4f",
+                        "surface-container-lowest": "#010f20",
+                        "error-container": "#93000a",
+                        "secondary": "#bfc8ce",
+                        "on-secondary-container": "#b1b9c0",
+                        "primary-container": "#00fbfb",
+                        "surface-container": "#122032",
+                        "on-primary-container": "#007070",
+                        "surface-container-highest": "#283648",
+                        "on-error": "#690005",
+                        "on-surface": "#d5e3fc",
+                        "on-secondary-fixed": "#151d22",
+                        "surface": "#051425",
+                        "tertiary": "#ffffff",
+                        "secondary-fixed-dim": "#bfc8ce",
+                        "outline-variant": "#3a4a49",
+                        "surface-bright": "#2c3a4d",
+                        "on-secondary-fixed-variant": "#40484d",
+                        "primary-fixed-dim": "#00dddd",
+                        "inverse-surface": "#d5e3fc",
+                        "surface-variant": "#283648",
+                        "surface-container-low": "#0e1c2e",
+                        "on-tertiary-fixed": "#380038"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "panel-gap": "16px",
+                        "margin-edge": "32px",
+                        "gutter": "24px",
+                        "container-padding": "24px"
+                    },
+                    "fontFamily": {
+                        "data-mono": ["JetBrains Mono"],
+                        "label-sm": ["JetBrains Mono"],
+                        "display-lg": ["Sora"],
+                        "headline-md": ["Sora"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"],
+                        "headline-lg": ["Sora"]
+                    },
+                    "fontSize": {
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "700" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        @keyframes ocean-drift {
+            0% { transform: scale(1.05) translate(0, 0); }
+            50% { transform: scale(1.1) translate(-2%, 1%); }
+            100% { transform: scale(1.05) translate(0, 0); }
+        }
+
+        .animate-ocean {
+            animation: ocean-drift 30s infinite ease-in-out;
+        }
+
+        .liquid-glass {
+            background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(0,221,221,0.05) 100%);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-bottom-color: rgba(0,251,251,0.3);
+            border-right-color: rgba(0,251,251,0.3);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.6), inset 0 0 20px rgba(255,255,255,0.05);
+        }
+        
+        .input-glow:focus {
+            border-bottom-color: #00dddd;
+            box-shadow: 0 2px 10px rgba(0,221,221,0.2);
+            outline: none;
+        }
+
+        .btn-cyan {
+            background: linear-gradient(135deg, #00fbfb 0%, #00dddd 100%);
+            box-shadow: 0 4px 15px rgba(0,221,221,0.3);
+            transition: all 0.2s ease;
+        }
+        
+        .btn-cyan:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 8px rgba(0,221,221,0.2);
+        }
+
+        .bg-ocean-overlay {
+            background: linear-gradient(to bottom, rgba(5,20,37,0.7) 0%, rgba(1,15,32,0.9) 100%);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen relative overflow-hidden flex items-center justify-center font-body-md">
+<!-- Background Layer (Simulated 3D Ocean Wave Animation via Image/Gradient placeholder) -->
+<div class="absolute inset-0 z-0 bg-cover bg-center animate-ocean" data-alt="A hyper-realistic, dark and moody 3D rendering of ocean waves in the Antarctic. The water is deep abyssal blue with bioluminescent cyan highlights catching the crests of the waves. The scene is illuminated by soft, diffused glacial lighting, creating a cold, precise, and high-tech atmosphere. The overall style is modern liquid glass, blending organic fluidity with advanced maritime command aesthetics." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAxo3mwCsojKoId00_tnKYOEInL63mdAUcQJqmCkc_pu2RHXK4HK8RqAGTOl2tBQJAURD_f-MXwY2tT-S6bHGSuL5PREzKqMD7D0exu5CxcunufmVc152TIu9q8xmRqVYEp9pnxYOpvsuxG_FH993gH6qNXx1tKnaiDX_ihPv2YmGIoOb3oioQIaGkoWQzcWnBwO22f8MvhgmUrDpRvvc_pEga8PMrTjVTNfgYmoDWtchOqwrdLGZe8')"></div>
+<div class="absolute inset-0 z-0 bg-ocean-overlay backdrop-blur-[4px]"></div>
+<!-- Main Content Canvas -->
+<main class="relative z-10 w-full max-w-md px-margin-edge py-gutter">
+<!-- Login Container (Ice Floe) -->
+<div class="liquid-glass rounded-xl overflow-hidden">
+<!-- Header Area -->
+<div class="bg-white/5 p-container-padding text-center border-b border-white/10">
+<div class="flex items-center justify-center gap-3 mb-2">
+<svg class="w-10 h-10 drop-shadow-[0_0_8px_rgba(0,251,251,0.4)]" viewbox="0 0 100 100">
+<polygon fill="rgba(255,255,255,0.9)" points="50,15 25,75 75,75"></polygon>
+<polygon fill="rgba(0,251,251,0.6)" points="50,15 25,75 50,75"></polygon>
+<polygon fill="rgba(255,255,255,0.3)" points="50,15 75,75 50,75"></polygon>
+<polygon fill="rgba(0,221,221,0.4)" points="25,75 50,90 75,75"></polygon>
+<polygon fill="rgba(0,251,251,0.2)" points="25,75 50,90 50,75"></polygon>
+</svg>
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">HimDrishti</h1>
+</div>
+<p class="font-data-mono text-data-mono text-on-surface-variant uppercase tracking-widest mt-1">Authentication Gateway</p>
+</div>
+<!-- Form Area -->
+<div class="p-container-padding space-y-6">
+<!-- Toggle (Login / Register) -->
+<div class="flex p-1 bg-surface-container-high rounded-full border border-white/5 mb-8">
+<button class="flex-1 py-2 px-4 rounded-full bg-white/10 text-primary font-label-sm text-label-sm shadow-sm transition-all" id="btn-login">Login</button>
+<button class="flex-1 py-2 px-4 rounded-full text-on-surface-variant hover:text-primary font-label-sm text-label-sm transition-all" id="btn-register">Register</button>
+</div>
+<form class="space-y-5" id="auth-form">
+<!-- Registration Only Fields (Hidden by default) -->
+<div class="hidden space-y-5" id="register-fields">
+<div class="relative">
+<label class="block font-label-sm text-label-sm text-outline mb-1" for="fullname">Full Name</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-on-surface-variant text-sm">person</span>
+<input class="w-full bg-surface-dim/50 border-t-0 border-x-0 border-b-2 border-white/10 rounded-t-sm pl-10 pr-3 py-2 text-on-surface placeholder-outline-variant focus:border-surface-tint focus:ring-0 input-glow transition-colors font-data-mono text-data-mono" id="fullname" placeholder="Enter full name" type="text"/>
+</div>
+</div>
+<div class="relative">
+<label class="block font-label-sm text-label-sm text-outline mb-1" for="role">Role Designation</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-on-surface-variant text-sm">badge</span>
+<select class="w-full bg-surface-dim/50 border-t-0 border-x-0 border-b-2 border-white/10 rounded-t-sm pl-10 pr-3 py-2 text-on-surface focus:border-surface-tint focus:ring-0 input-glow transition-colors font-data-mono text-data-mono appearance-none" id="role">
+<option class="bg-surface-container" disabled="" selected="" value="">Select Role...</option>
+<option class="bg-surface-container" value="planner">Strategic Planner</option>
+<option class="bg-surface-container" value="mariner">Field Mariner</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 text-on-surface-variant text-sm pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+</div>
+<!-- Common Fields -->
+<div class="relative">
+<label class="block font-label-sm text-label-sm text-outline mb-1" for="email">Secure Email</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-on-surface-variant text-sm">mail</span>
+<input class="w-full bg-surface-dim/50 border-t-0 border-x-0 border-b-2 border-white/10 rounded-t-sm pl-10 pr-3 py-2 text-on-surface placeholder-outline-variant focus:border-surface-tint focus:ring-0 input-glow transition-colors font-data-mono text-data-mono" id="email" placeholder="operative@command.net" type="email"/>
+</div>
+</div>
+<div class="relative">
+<label class="block font-label-sm text-label-sm text-outline mb-1" for="password">Access Key</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-on-surface-variant text-sm">lock</span>
+<input class="w-full bg-surface-dim/50 border-t-0 border-x-0 border-b-2 border-white/10 rounded-t-sm pl-10 pr-10 py-2 text-on-surface placeholder-outline-variant focus:border-surface-tint focus:ring-0 input-glow transition-colors font-data-mono text-data-mono" id="password" placeholder="••••••••" type="password"/>
+<button class="absolute right-3 text-on-surface-variant hover:text-primary transition-colors focus:outline-none" type="button">
+<span class="material-symbols-outlined text-sm">visibility</span>
+</button>
+</div>
+<!-- Validation cues for register mode -->
+<div class="hidden mt-2 space-y-1" id="password-reqs">
+<div class="flex items-center text-outline text-[10px] font-data-mono">
+<span class="material-symbols-outlined text-[12px] mr-1 text-on-surface-variant">check_circle</span> Min 8 characters
+                            </div>
+<div class="flex items-center text-outline text-[10px] font-data-mono">
+<span class="material-symbols-outlined text-[12px] mr-1 text-on-surface-variant">check_circle</span> 1 Number
+                            </div>
+<div class="flex items-center text-outline text-[10px] font-data-mono">
+<span class="material-symbols-outlined text-[12px] mr-1 text-on-surface-variant">check_circle</span> 1 Special Character
+                            </div>
+</div>
+</div>
+<div class="text-right" id="forgot-password">
+<a class="font-label-sm text-label-sm text-primary-fixed-dim hover:text-primary transition-colors" href="#">Forgot Access Key?</a>
+</div>
+<!-- CTA -->
+<button class="w-full btn-cyan rounded-lg py-3 px-4 font-label-sm text-label-sm text-on-primary-fixed uppercase tracking-wider flex items-center justify-center gap-2 mt-6" type="submit">
+<span id="submit-text">Initiate Uplink</span>
+<span class="material-symbols-outlined text-sm">login</span>
+</button>
+</form>
+<!-- Status Chip Example (Technical readouts) -->
+<div class="mt-8 flex justify-center items-center gap-2">
+<div class="h-2 w-2 rounded-full bg-primary-fixed-dim shadow-[0_0_8px_#00dddd] animate-pulse"></div>
+<span class="font-data-mono text-[10px] text-outline uppercase">Gateway: STABLE</span>
+</div>
+</div>
+</div>
+<!-- Footer Footer - Suppressed due to Transactional Intent (Login Screen) -->
+</main>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnLogin = document.getElementById('btn-login');
+            const btnRegister = document.getElementById('btn-register');
+            const registerFields = document.getElementById('register-fields');
+            const passwordReqs = document.getElementById('password-reqs');
+            const forgotPassword = document.getElementById('forgot-password');
+            const submitText = document.getElementById('submit-text');
+            const submitIcon = document.querySelector('#auth-form button[type="submit"] .material-symbols-outlined');
+
+            btnRegister.addEventListener('click', (e) => {
+                e.preventDefault();
+                // Update tabs
+                btnRegister.classList.replace('bg-transparent', 'bg-white/10');
+                btnRegister.classList.replace('text-on-surface-variant', 'text-primary');
+                
+                btnLogin.classList.replace('bg-white/10', 'bg-transparent');
+                btnLogin.classList.replace('text-primary', 'text-on-surface-variant');
+
+                // Toggle visibility
+                registerFields.classList.remove('hidden');
+                passwordReqs.classList.remove('hidden');
+                forgotPassword.classList.add('hidden');
+
+                // Update CTA
+                submitText.textContent = 'Request Access';
+                submitIcon.textContent = 'person_add';
+            });
+
+            btnLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                // Update tabs
+                btnLogin.classList.replace('bg-transparent', 'bg-white/10');
+                btnLogin.classList.replace('text-on-surface-variant', 'text-primary');
+                
+                btnRegister.classList.replace('bg-white/10', 'bg-transparent');
+                btnRegister.classList.replace('text-primary', 'text-on-surface-variant');
+
+                // Toggle visibility
+                registerFields.classList.add('hidden');
+                passwordReqs.classList.add('hidden');
+                forgotPassword.classList.remove('hidden');
+
+                // Update CTA
+                submitText.textContent = 'Initiate Uplink';
+                submitIcon.textContent = 'login';
+            });
+        });
+    </script>
+</body></html>

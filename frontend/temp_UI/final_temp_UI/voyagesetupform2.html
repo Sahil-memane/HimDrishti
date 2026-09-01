@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Voyage Setup | HimDrishti Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&amp;family=Inter:wght@400;500;700&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-fixed": "#c2e8ff",
+                      "on-primary-container": "#00586d",
+                      "primary": "#aee9ff",
+                      "on-background": "#d7e4f5",
+                      "tertiary-container": "#b3c6db",
+                      "on-secondary-fixed": "#001e2c",
+                      "on-surface": "#d7e4f5",
+                      "primary-container": "#35d4ff",
+                      "background": "#071420",
+                      "secondary-fixed-dim": "#77d1ff",
+                      "secondary": "#77d1ff",
+                      "on-tertiary-container": "#405365",
+                      "on-primary-fixed-variant": "#004e60",
+                      "surface-bright": "#2e3a48",
+                      "on-error-container": "#ffdad6",
+                      "on-secondary": "#003549",
+                      "inverse-on-surface": "#25323f",
+                      "tertiary-fixed-dim": "#b5c8de",
+                      "on-tertiary-fixed": "#091d2d",
+                      "primary-fixed": "#b6ebff",
+                      "tertiary": "#cfe2f8",
+                      "on-tertiary": "#203243",
+                      "surface-container-lowest": "#030f1b",
+                      "outline-variant": "#3c494e",
+                      "outline": "#869398",
+                      "secondary-container": "#249bcb",
+                      "surface-variant": "#293643",
+                      "on-error": "#690005",
+                      "surface-tint": "#49d6ff",
+                      "surface-dim": "#071420",
+                      "tertiary-fixed": "#d1e4fb",
+                      "on-primary-fixed": "#001f28",
+                      "surface-container-low": "#101d29",
+                      "on-tertiary-fixed-variant": "#36485a",
+                      "inverse-surface": "#d7e4f5",
+                      "inverse-primary": "#00677f",
+                      "surface-container-high": "#1f2b38",
+                      "surface-container": "#14212d",
+                      "on-secondary-container": "#002d3f",
+                      "on-primary": "#003543",
+                      "on-secondary-fixed-variant": "#004d68",
+                      "surface-container-highest": "#293643",
+                      "on-surface-variant": "#bbc9cf",
+                      "primary-fixed-dim": "#49d6ff",
+                      "surface": "#071420",
+                      "error": "#ffb4ab",
+                      "error-container": "#93000a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "margin-mobile": "16px",
+                      "margin-desktop": "40px",
+                      "unit": "4px",
+                      "container-padding": "24px"
+              },
+              "fontFamily": {
+                      "data-mono": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-md": [
+                              "Manrope"
+                      ],
+                      "display-lg": [
+                              "Manrope"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Manrope"
+                      ]
+              },
+              "fontSize": {
+                      "data-mono": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.1em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background-color: rgba(8, 28, 44, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(174, 233, 255, 0.3);
+            border-bottom: 1px solid rgba(134, 147, 152, 0.1);
+            border-left: 1px solid rgba(134, 147, 152, 0.1);
+            border-right: 1px solid rgba(134, 147, 152, 0.1);
+            box-shadow: 0px -2px 12px 0px rgba(174, 233, 255, 0.1);
+        }
+        
+        .bg-pan {
+            animation: bgPan 60s ease-in-out infinite alternate;
+            background-size: 200%;
+        }
+        
+        @keyframes bgPan {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 100% 100%; }
+        }
+        
+        .grid-overlay {
+            background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .shake {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .input-glass {
+            background-color: #040C14;
+            border: 1px solid rgba(60, 73, 78, 0.6);
+            color: #ffffff;
+            transition: all 0.2s ease;
+        }
+        
+        .input-glass:focus {
+            border-color: #aee9ff;
+            box-shadow: 0 0 8px rgba(174, 233, 255, 0.4);
+            outline: none;
+        }
+
+        .input-error {
+            border-color: #ffb4ab !important;
+            box-shadow: 0 0 8px rgba(255, 180, 171, 0.4) !important;
+        }
+        
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+
+        /* Customizing radio button to look like cards */
+        input[type="radio"]:checked + div {
+            border-color: #aee9ff;
+            background-color: rgba(174, 233, 255, 0.1);
+            box-shadow: 0 0 12px rgba(174, 233, 255, 0.2);
+        }
+        input[type="radio"]:checked + div .radio-icon {
+            color: #aee9ff;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface h-screen overflow-hidden flex font-body-md">
+<!-- Global Background Animation -->
+<div class="fixed inset-0 z-[-1] bg-pan bg-center" data-alt="A highly detailed, ultra-high-resolution satellite view of the Antarctic continent. The scene is bathed in cold, cinematic lighting typical of polar intelligence feeds, with deep navy blue ocean expanses contrasting against the stark white and cyan-tinted ice shelves. Intricate fracture patterns in the ice and subtle cloud cover add texture, maintaining a dark, moody, and technologically advanced atmospheric aesthetic consistent with a mission control interface." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAAqoA-o_9Y1-evNvfZMk7h48w6RYCRAJaDQszYyH5DbAZR4vY8b7ktxmBQ015vErzMimDS8VQg1vMfB-0njX8LaeaSAi9ZZEtAf4l4bM-rweMjVYztFCht9fGMChOtGH_S92l5ZKf7GihhbElmtDUzvSr8PEfTEK_0xjQ3XJIUtzRHM8JLWE1E3PkfnUe7p52E4ufDAVVJpJxA9z4KhwFpYGkJ3qvS88ju7aqRx9Bv2J4IoI3ku7kC')">
+<div class="absolute inset-0 grid-overlay"></div>
+<div class="absolute inset-0 bg-gradient-to-b from-background/40 to-background/80"></div>
+</div>
+<!-- Side Navigation Shell (from JSON) -->
+<aside class="fixed left-0 top-0 h-screen w-16 md:w-64 bg-surface-container dark:bg-surface-container border-r border-outline-variant backdrop-blur-2xl shadow-sm z-50 flex flex-col h-full py-unit-4 px-unit-2">
+<!-- Brand / Header Anchor -->
+<div class="px-4 py-6 hidden md:block">
+<h1 class="font-headline-md text-headline-md font-bold text-primary tracking-tight truncate">HimDrishti Intelligence</h1>
+</div>
+<div class="px-4 py-6 md:hidden flex justify-center">
+<h1 class="font-headline-md text-headline-md font-bold text-primary tracking-tight">H</h1>
+</div>
+<nav class="flex-1 overflow-y-auto space-y-2 mt-4 md:mt-0">
+<!-- Dashboard -->
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 duration-150 group" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+<span class="font-label-caps text-label-caps hidden md:inline-block uppercase tracking-wider">Dashboard</span>
+</a>
+<!-- Voyage (ACTIVE) -->
+<a class="flex items-center space-x-3 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-lg font-bold hover:bg-surface-container-high transition-colors active:scale-95 duration-150 group" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">sailing</span>
+<span class="font-label-caps text-label-caps hidden md:inline-block uppercase tracking-wider">Voyage</span>
+</a>
+<!-- Forecast -->
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 duration-150 group" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">weather_mix</span>
+<span class="font-label-caps text-label-caps hidden md:inline-block uppercase tracking-wider">Forecast</span>
+</a>
+<!-- Alerts -->
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 duration-150 group" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">warning</span>
+<span class="font-label-caps text-label-caps hidden md:inline-block uppercase tracking-wider">Alerts</span>
+</a>
+<!-- Route Analysis -->
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 duration-150 group" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">analytics</span>
+<span class="font-label-caps text-label-caps hidden md:inline-block uppercase tracking-wider">Route Analysis</span>
+</a>
+<!-- History -->
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 duration-150 group" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">history</span>
+<span class="font-label-caps text-label-caps hidden md:inline-block uppercase tracking-wider">History</span>
+</a>
+</nav>
+<div class="mt-auto hidden md:flex items-center p-4 border-t border-outline-variant/30">
+<img class="w-10 h-10 rounded-full border border-outline-variant object-cover" data-alt="A minimalist, high-contrast, stylized geometric avatar representing a system operator in a dark mode UI. Deep blues and cyan accents. Circular crop, professional, futuristic military style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuPl6Q2W12PZkTfWmyPPud0wY-f6OJp3pdBYke2kZIrwd_1GqF_pd3pmkiqSt3ag0PgPVbsr1q68izeh84RGudVWkOMgGHTDNV5sPK5lTixaBZZzHZITr8T8CLLrp8Xl8ZBtaOethpW9_2yGQmQE2--bTGuMk80ccLj1IBGydvixjnaEiQdRlsKTxc3oygA_tIgwTkQNK4-NWKTHcl12HB6G7xN_rQmSgXTuF7vNkXXczzpWEBZ-8c"/>
+<div class="ml-3 overflow-hidden">
+<p class="font-data-mono text-data-mono text-on-surface truncate">HimDrishti</p>
+<p class="font-label-caps text-label-caps text-on-surface-variant text-[10px] truncate">Antarctic Command</p>
+</div>
+</div>
+</aside>
+<!-- Top App Bar Shell (from JSON) -->
+<header class="fixed top-0 right-0 left-16 md:left-64 z-40 flex justify-between items-center px-gutter h-16 bg-surface/60 dark:bg-surface/60 backdrop-blur-20 border-b border-outline-variant shadow-md">
+<div class="flex items-center">
+<h2 class="font-headline-md text-headline-md font-bold text-primary truncate hidden md:block">HimDrishti Intelligence</h2>
+<!-- Mobile Title -->
+<h2 class="font-body-lg text-body-lg font-bold text-primary truncate md:hidden">Voyage Setup</h2>
+</div>
+<div class="flex items-center space-x-4">
+<button class="text-on-surface-variant hover:text-primary transition-opacity cursor-pointer p-2 rounded-full hover:bg-surface-container-high">
+<span class="material-symbols-outlined">sync</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-opacity cursor-pointer p-2 rounded-full hover:bg-surface-container-high">
+<span class="material-symbols-outlined">update</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-opacity cursor-pointer p-2 rounded-full hover:bg-surface-container-high relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+</button>
+<button class="md:hidden ml-2 rounded-full border border-outline-variant overflow-hidden w-8 h-8">
+<img class="w-full h-full object-cover" data-alt="A minimalist, high-contrast, stylized geometric avatar representing a user settings profile in a dark mode UI. Deep blues and cyan accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmgXe1IzvHTmxfHdXbWT_oZX2LlGvMc7WATyxzzvqIKMQut2NI6cJxc5x5utIzED3n7TnCqWHt3Q7PrNQ5BCZWALcEUkmjcLzXCkYwmIkFIryHZahT8Ja75kakTHp7AabFGIxjj-uivn_ejayrkh6bjMypPJhgbMma7lV9GbOeAkfU8CLlhiDd3zkl7LYeK-ztaqdeOywq2yMq4e9Fet7OMIDHG_HnwEXCyIJRmdnpqJ0523cYv9iv"/>
+</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 ml-16 md:ml-64 mt-16 p-4 md:p-gutter overflow-y-auto flex justify-center items-start">
+<!-- Voyage Setup Panel -->
+<div class="w-full max-w-5xl glass-panel rounded-xl mt-4 md:mt-8 relative overflow-hidden flex flex-col">
+<!-- Panel Header -->
+<div class="p-6 md:p-8 border-b border-outline-variant/30 flex flex-col">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Plan Your Antarctic Voyage</h2>
+<div class="flex items-center mt-2 space-x-2">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<p class="font-data-mono text-data-mono text-primary uppercase tracking-widest text-[11px] md:text-sm">INITIALIZE INTELLIGENT ROUTING PROTOCOL</p>
+</div>
+</div>
+<!-- Panel Form Body -->
+<form class="p-6 md:p-8 flex-1 overflow-y-auto" id="voyageForm">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
+<!-- Left Column: Vessel Telemetry -->
+<div class="space-y-6">
+<div class="flex items-center space-x-2 mb-4 border-b border-outline-variant/50 pb-2">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">directions_boat</span>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant tracking-widest uppercase">VESSEL TELEMETRY</h3>
+</div>
+<!-- Assigned Vessel -->
+<div class="space-y-1">
+<label class="font-label-caps text-label-caps text-on-surface-variant block uppercase">Assigned Vessel</label>
+<div class="relative">
+<select class="w-full input-glass rounded-lg py-3 px-4 appearance-none font-data-mono text-data-mono cursor-pointer" required="">
+<option disabled="" selected="" value="">SELECT VESSEL ID...</option>
+<option value="v1">R/V SA Agulhas II</option>
+<option value="v2">HMS Endurance</option>
+<option value="v3">Icebreaker Shirase</option>
+<option value="v4">Polarstern</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-primary">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Origin Lat/Lon -->
+<div class="space-y-1 pt-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant block uppercase">Origin Coordinates (LAT / LON)</label>
+<div class="grid grid-cols-2 gap-4">
+<div class="relative">
+<input class="w-full input-glass rounded-lg py-3 px-4 font-data-mono text-data-mono pl-10" id="originLat" max="90" min="-90" placeholder="-60.0000" required="" step="0.0001" type="number"/>
+<span class="material-symbols-outlined absolute left-3 top-3.5 text-on-surface-variant text-[18px]">find_replace</span>
+<p class="error-msg hidden font-label-caps text-label-caps text-error mt-1 text-[10px] absolute -bottom-5">Invalid Lat (-90 to 90)</p>
+</div>
+<div class="relative">
+<input class="w-full input-glass rounded-lg py-3 px-4 font-data-mono text-data-mono pl-10" id="originLon" max="180" min="-180" placeholder="40.0000" required="" step="0.0001" type="number"/>
+<span class="material-symbols-outlined absolute left-3 top-3.5 text-on-surface-variant text-[18px]">public</span>
+<p class="error-msg hidden font-label-caps text-label-caps text-error mt-1 text-[10px] absolute -bottom-5">Invalid Lon (-180 to 180)</p>
+</div>
+</div>
+</div>
+<!-- Speed & Fuel Rate -->
+<div class="space-y-1 pt-4">
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant block uppercase mb-1">Cruising Speed</label>
+<div class="relative">
+<input class="w-full input-glass rounded-lg py-3 px-4 font-data-mono text-data-mono pr-12" min="1" placeholder="12.5" required="" step="0.1" type="number"/>
+<span class="absolute right-4 top-3.5 font-label-caps text-on-surface-variant text-xs">KTS</span>
+</div>
+</div>
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant block uppercase mb-1">Fuel Consump. Rate</label>
+<div class="relative">
+<input class="w-full input-glass rounded-lg py-3 px-4 font-data-mono text-data-mono pr-12" min="1" placeholder="850" required="" step="1" type="number"/>
+<span class="absolute right-4 top-3.5 font-label-caps text-on-surface-variant text-xs">LPH</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Routing Parameters -->
+<div class="space-y-6">
+<div class="flex items-center space-x-2 mb-4 border-b border-outline-variant/50 pb-2">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">route</span>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant tracking-widest uppercase">ROUTING PARAMETERS</h3>
+</div>
+<!-- Dest Lat/Lon -->
+<div class="space-y-1">
+<label class="font-label-caps text-label-caps text-on-surface-variant block uppercase">Destination Coordinates (LAT / LON)</label>
+<div class="grid grid-cols-2 gap-4">
+<div class="relative">
+<input class="w-full input-glass rounded-lg py-3 px-4 font-data-mono text-data-mono pl-10" id="destLat" max="90" min="-90" placeholder="-77.8460" required="" step="0.0001" type="number"/>
+<span class="material-symbols-outlined absolute left-3 top-3.5 text-on-surface-variant text-[18px]">my_location</span>
+<p class="error-msg hidden font-label-caps text-label-caps text-error mt-1 text-[10px] absolute -bottom-5">Invalid Lat (-90 to 90)</p>
+</div>
+<div class="relative">
+<input class="w-full input-glass rounded-lg py-3 px-4 font-data-mono text-data-mono pl-10" id="destLon" max="180" min="-180" placeholder="166.6682" required="" step="0.0001" type="number"/>
+<span class="material-symbols-outlined absolute left-3 top-3.5 text-on-surface-variant text-[18px]">location_searching</span>
+<p class="error-msg hidden font-label-caps text-label-caps text-error mt-1 text-[10px] absolute -bottom-5">Invalid Lon (-180 to 180)</p>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 pt-2">
+<!-- Fuel Capacity -->
+<div class="space-y-1">
+<label class="font-label-caps text-label-caps text-on-surface-variant block uppercase">Fuel Capacity</label>
+<div class="relative">
+<input class="w-full input-glass rounded-lg py-3 px-4 font-data-mono text-data-mono pr-8" min="1000" placeholder="500000" required="" type="number"/>
+<span class="absolute right-4 top-3.5 font-label-caps text-on-surface-variant text-xs">L</span>
+</div>
+</div>
+<!-- Departure Time -->
+<div class="space-y-1">
+<label class="font-label-caps text-label-caps text-on-surface-variant block uppercase">Departure (UTC)</label>
+<input class="w-full input-glass rounded-lg py-[11px] px-4 font-data-mono text-data-mono text-sm [color-scheme:dark]" id="depTime" required="" type="datetime-local"/>
+</div>
+</div>
+<!-- Risk Profile -->
+<div class="space-y-2 pt-4">
+<label class="font-label-caps text-label-caps text-on-surface-variant block uppercase mb-2">Risk Preference Profile</label>
+<div class="grid grid-cols-3 gap-3">
+<label class="cursor-pointer relative">
+<input class="sr-only" name="risk_profile" required="" type="radio" value="safest"/>
+<div class="border border-outline-variant/60 rounded-lg p-3 text-center transition-all hover:bg-surface-container-high h-full flex flex-col justify-center items-center">
+<span class="material-symbols-outlined text-on-surface-variant mb-1 radio-icon">shield</span>
+<span class="font-label-caps text-[10px] block text-on-surface radio-text">SAFEST</span>
+</div>
+</label>
+<label class="cursor-pointer relative">
+<input checked="" class="sr-only" name="risk_profile" type="radio" value="balanced"/>
+<div class="border border-outline-variant/60 rounded-lg p-3 text-center transition-all hover:bg-surface-container-high h-full flex flex-col justify-center items-center">
+<span class="material-symbols-outlined text-on-surface-variant mb-1 radio-icon">balance</span>
+<span class="font-label-caps text-[10px] block text-on-surface radio-text">BALANCED</span>
+</div>
+</label>
+<label class="cursor-pointer relative">
+<input class="sr-only" name="risk_profile" type="radio" value="efficient"/>
+<div class="border border-outline-variant/60 rounded-lg p-3 text-center transition-all hover:bg-surface-container-high h-full flex flex-col justify-center items-center">
+<span class="material-symbols-outlined text-on-surface-variant mb-1 radio-icon">speed</span>
+<span class="font-label-caps text-[10px] block text-on-surface radio-text">EFFICIENT</span>
+</div>
+</label>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Footer -->
+<div class="mt-10 pt-6 border-t border-outline-variant/30 flex justify-end items-center">
+<button class="bg-primary hover:bg-primary-container text-on-primary font-label-caps text-label-caps px-8 py-4 rounded-lg flex items-center justify-center space-x-2 transition-all shadow-[0_0_15px_rgba(174,233,255,0.3)] hover:shadow-[0_0_25px_rgba(174,233,255,0.5)] group relative overflow-hidden" id="submitBtn" type="submit">
+<div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+<span class="material-symbols-outlined relative z-10" id="btnIcon">route</span>
+<span class="relative z-10" id="btnText">GENERATE INTELLIGENT ROUTE</span>
+</button>
+</div>
+</form>
+</div>
+</main>
+<script>
+        // Setup Date
+        const now = new Date();
+        now.setHours(now.getHours() + 1);
+        const isoString = now.toISOString().slice(0, 16);
+        document.getElementById('depTime').value = isoString;
+
+        // Validation Logic
+        const latInputs = [document.getElementById('originLat'), document.getElementById('destLat')];
+        const lonInputs = [document.getElementById('originLon'), document.getElementById('destLon')];
+
+        function validateInput(input, min, max) {
+            const val = parseFloat(input.value);
+            const parent = input.parentElement;
+            const errorMsg = parent.querySelector('.error-msg');
+            
+            if (input.value !== "" && (isNaN(val) || val < min || val > max)) {
+                input.classList.add('input-error');
+                parent.classList.add('shake');
+                if(errorMsg) errorMsg.classList.remove('hidden');
+                
+                // Remove shake class after animation
+                setTimeout(() => {
+                    parent.classList.remove('shake');
+                }, 400);
+                return false;
+            } else {
+                input.classList.remove('input-error');
+                if(errorMsg) errorMsg.classList.add('hidden');
+                return true;
+            }
+        }
+
+        latInputs.forEach(input => {
+            input.addEventListener('blur', () => validateInput(input, -90, 90));
+        });
+
+        lonInputs.forEach(input => {
+            input.addEventListener('blur', () => validateInput(input, -180, 180));
+        });
+
+        // Form Submit Simulation
+        document.getElementById('voyageForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Re-validate all required coordinate inputs
+            let isValid = true;
+            latInputs.forEach(input => { if(!validateInput(input, -90, 90)) isValid = false; });
+            lonInputs.forEach(input => { if(!validateInput(input, -180, 180)) isValid = false; });
+
+            if(isValid) {
+                const btn = document.getElementById('submitBtn');
+                const icon = document.getElementById('btnIcon');
+                const text = document.getElementById('btnText');
+
+                btn.classList.add('opacity-80', 'cursor-wait');
+                btn.classList.remove('hover:shadow-[0_0_25px_rgba(174,233,255,0.5)]');
+                icon.textContent = 'sync';
+                icon.classList.add('animate-spin');
+                text.textContent = 'COMPUTING ROUTE...';
+
+                // Reset after dummy delay
+                setTimeout(() => {
+                    btn.classList.remove('opacity-80', 'cursor-wait');
+                    btn.classList.add('hover:shadow-[0_0_25px_rgba(174,233,255,0.5)]');
+                    icon.textContent = 'check_circle';
+                    icon.classList.remove('animate-spin');
+                    text.textContent = 'ROUTE ESTABLISHED';
+                    
+                    setTimeout(() => {
+                        icon.textContent = 'route';
+                        text.textContent = 'GENERATE INTELLIGENT ROUTE';
+                    }, 2000);
+                }, 3000);
+            }
+        });
+    </script>
+</body></html>
