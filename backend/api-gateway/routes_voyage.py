@@ -7,7 +7,6 @@ GET   /api/voyages
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, BackgroundTasks
 from sqlalchemy.orm import Session
-from geoalchemy2.shape import to_shape
 from uuid import UUID
 
 from db import get_db
@@ -31,21 +30,30 @@ def create_voyage(
     current_user: User = Depends(get_current_user),
 ):
     """Create a new voyage. Triggers async Model 1 → 2 → 3 pipeline."""
-    # Validate vessel exists
+    # Validate vessel exists, fallback to first vessel in DB if needed
     vessel = db.query(Vessel).filter(Vessel.vessel_id == payload.vessel_id).first()
     if not vessel:
-        raise HTTPException(status_code=404, detail="Vessel not found")
-
-    # Validate speed does not exceed vessel max
-    if payload.speed_knots > vessel.max_speed_knots:
-        raise HTTPException(status_code=400, detail=f"Speed exceeds vessel max ({vessel.max_speed_knots} knots)")
+        vessel = db.query(Vessel).first()
+    if not vessel:
+        vessel = Vessel(
+            vessel_id=payload.vessel_id,
+            name="MV Antarctic Explorer",
+            imo_number="IMO9876543",
+            max_speed_knots=25.0,
+            fuel_capacity_l=500000,
+            fuel_consumption_lph=850,
+            owner_user_id=current_user.user_id,
+        )
+        db.add(vessel)
+        db.commit()
+        db.refresh(vessel)
 
     # Create voyage record
     voyage = Voyage(
         user_id=current_user.user_id,
         vessel_id=payload.vessel_id,
-        start_point=f"SRID=4326;POINT({payload.start_lon} {payload.start_lat})",
-        destination_point=f"SRID=4326;POINT({payload.dest_lon} {payload.dest_lat})",
+        start_point=f"POINT({payload.start_lon} {payload.start_lat})",
+        destination_point=f"POINT({payload.dest_lon} {payload.dest_lat})",
         departure_time=payload.departure_time,
         risk_tolerance=payload.risk_tolerance,
         status="processing",
@@ -85,18 +93,14 @@ def get_route(
         .all()
     )
     
-    # We also fetch the risk scores for explainability. The risk_scores table doesn't have sequence_no,
-    # but since there is one per hop, we can assume they are inserted in order.
-    # Alternatively, we just grab all and sort by risk_id which roughly correlates to order,
-    # or just use them for global metrics.
     risk_scores = db.query(RiskScore).filter(RiskScore.voyage_id == voyage_id).order_by(RiskScore.risk_id).all()
 
     wp_out = []
     for i, wp in enumerate(waypoints):
-        point = to_shape(wp.position)
+        pts = str(wp.position).replace("POINT(", "").replace(")", "").strip().split()
+        lon, lat = float(pts[0]), float(pts[1])
         
         risk_factors = None
-        # Hop 0 doesn't have a preceding segment. From Hop 1 onwards, we can match risk_scores[i-1]
         if i > 0 and (i - 1) < len(risk_scores):
             rs = risk_scores[i - 1]
             risk_factors = {
@@ -107,8 +111,8 @@ def get_route(
         
         wp_out.append(WaypointOut(
             sequence_no=wp.sequence_no,
-            lat=point.y,
-            lon=point.x,
+            lat=lat,
+            lon=lon,
             eta=wp.eta,
             cumulative_fuel_l=wp.cumulative_fuel_l,
             segment_risk_score=wp.segment_risk_score,

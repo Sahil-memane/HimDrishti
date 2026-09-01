@@ -20,14 +20,11 @@ MODEL3_URL = "http://model3:8003"
 
 from sqlalchemy import func as geo_func
 
-def _extract_lonlat(db: Session, geom_col) -> tuple[float, float]:
-    """Extract (lon, lat) from a GeoAlchemy2 geometry column via ST_X/ST_Y."""
-    from sqlalchemy import literal
-    row = db.execute(
-        text("SELECT ST_X(ST_GeomFromEWKB(:g)), ST_Y(ST_GeomFromEWKB(:g))"),
-        {"g": geom_col.data}
-    ).fetchone()
-    return float(row[0]), float(row[1])
+def _extract_lonlat(geom_col) -> tuple[float, float]:
+    """Extract (lon, lat) from a WKT point string 'POINT(lon lat)'."""
+    cleaned = str(geom_col).replace("POINT(", "").replace(")", "").strip()
+    parts = cleaned.split()
+    return float(parts[0]), float(parts[1])
 
 
 def process_voyage_pipeline(voyage_id: str, db: Session):
@@ -46,8 +43,8 @@ def process_voyage_pipeline(voyage_id: str, db: Session):
 
     try:
         # -- Extract coordinates from WKB geometry --
-        lon_s, lat_s = _extract_lonlat(db, voyage.start_point)
-        lon_d, lat_d = _extract_lonlat(db, voyage.destination_point)
+        lon_s, lat_s = _extract_lonlat(voyage.start_point)
+        lon_d, lat_d = _extract_lonlat(voyage.destination_point)
 
         # -- Step 1: Model 1 (Sea Ice) --
         # Model 1 seeds on startup; no per-voyage HTTP call needed for demo.

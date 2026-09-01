@@ -9,7 +9,6 @@ scaler = None
 
 def load_models():
     global model, scaler
-    import tensorflow as tf
     model_path = "/app/artifacts/sea_ice_forecasting_model/sic_lstm_best.keras"
     scaler_path = "/app/artifacts/sea_ice_forecasting_model/feature_scaler.pkl"
     
@@ -19,6 +18,7 @@ def load_models():
         scaler_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "ml", "artifacts", "sea_ice_forecasting_model", "feature_scaler.pkl"))
         
     try:
+        import tensorflow as tf
         model = tf.keras.models.load_model(model_path)
         with open(scaler_path, "rb") as f:
             scaler = pickle.load(f)

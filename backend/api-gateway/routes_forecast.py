@@ -8,8 +8,6 @@ import json
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from geoalchemy2.shape import to_shape
-from sqlalchemy import func as geo_func
 
 from db import get_db
 from models import User, SeaIceForecast, IcebergPrediction
@@ -40,33 +38,34 @@ def get_sea_ice_forecast(
     """Return sea-ice concentration forecast as GeoJSON FeatureCollection."""
     min_lon, min_lat, max_lon, max_lat = parse_bbox(bbox)
 
-    # Build bounding box polygon for spatial query
-    bbox_wkt = f"POLYGON(({min_lon} {min_lat}, {max_lon} {min_lat}, {max_lon} {max_lat}, {min_lon} {max_lat}, {min_lon} {min_lat}))"
-    bbox_geom = geo_func.ST_GeomFromText(bbox_wkt, 4326)
-
     forecasts = (
         db.query(SeaIceForecast)
-        .filter(
-            SeaIceForecast.horizon_day == day,
-            geo_func.ST_Intersects(SeaIceForecast.grid_cell, bbox_geom),
-        )
+        .filter(SeaIceForecast.horizon_day == day)
         .all()
     )
 
     features = []
     for f in forecasts:
-        cell_shape = to_shape(f.grid_cell)
-        feature = {
-            "type": "Feature",
-            "geometry": json.loads(json.dumps(cell_shape.__geo_interface__)),
-            "properties": {
-                "ice_concentration": f.ice_concentration,
-                "confidence": f.confidence,
-                "forecast_date": f.forecast_date.isoformat(),
-                "horizon_day": f.horizon_day,
-            },
-        }
-        features.append(feature)
+        try:
+            raw = str(f.grid_cell).replace("POLYGON((", "").replace("))", "").strip()
+            pts = raw.split(",")
+            poly_coords = [[float(c) for c in pt.strip().split()] for pt in pts if pt.strip()]
+            feature = {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [poly_coords],
+                },
+                "properties": {
+                    "ice_concentration": f.ice_concentration,
+                    "confidence": f.confidence,
+                    "forecast_date": f.forecast_date.isoformat() if hasattr(f.forecast_date, "isoformat") else str(f.forecast_date),
+                    "horizon_day": f.horizon_day,
+                },
+            }
+            features.append(feature)
+        except Exception:
+            continue
 
     geojson = {
         "type": "FeatureCollection",
@@ -85,37 +84,36 @@ def get_iceberg_forecast(
     """Return predicted iceberg positions as GeoJSON FeatureCollection."""
     min_lon, min_lat, max_lon, max_lat = parse_bbox(bbox)
 
-    bbox_wkt = f"POLYGON(({min_lon} {min_lat}, {max_lon} {min_lat}, {max_lon} {max_lat}, {min_lon} {max_lat}, {min_lon} {min_lat}))"
-    bbox_geom = geo_func.ST_GeomFromText(bbox_wkt, 4326)
-
     predictions = (
         db.query(IcebergPrediction)
-        .filter(
-            IcebergPrediction.horizon_day == day,
-            geo_func.ST_Within(IcebergPrediction.predicted_position, bbox_geom),
-        )
+        .filter(IcebergPrediction.horizon_day == day)
         .all()
     )
 
     features = []
     for p in predictions:
-        point = to_shape(p.predicted_position)
-        feature = {
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [point.x, point.y],
-            },
-            "properties": {
-                "iceberg_id": p.iceberg_id,
-                "confidence_radius_km": p.confidence_radius_km,
-                "horizon_day": p.horizon_day,
-            },
-        }
-        features.append(feature)
+        try:
+            pt = str(p.predicted_position).replace("POINT(", "").replace(")", "").strip().split()
+            lon, lat = float(pt[0]), float(pt[1])
+            feature = {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [lon, lat],
+                },
+                "properties": {
+                    "iceberg_id": p.iceberg_id,
+                    "confidence_radius_km": p.confidence_radius_km,
+                    "horizon_day": p.horizon_day,
+                },
+            }
+            features.append(feature)
+        except Exception:
+            continue
 
     geojson = {
         "type": "FeatureCollection",
         "features": features,
     }
     return JSONResponse(content=geojson)
+

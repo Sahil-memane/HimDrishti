@@ -70,4 +70,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
         access_token=access_token,
         refresh_token=refresh_token,
         expires_in=settings.jwt_expire_minutes * 60,
+        user_id=user.user_id,
+        role=user.role,
+        email=user.email,
     )

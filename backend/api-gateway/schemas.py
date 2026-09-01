@@ -38,6 +38,9 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     expires_in: int
+    user_id: UUID
+    role: str
+    email: str
 
 
 # =============================================================

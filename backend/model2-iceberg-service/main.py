@@ -61,10 +61,8 @@ def predict_iceberg(iceberg_id: str):
 
         # Get the anchor (last known position)
         last_track = tracks[-1]
-        # Extract lat/lon from the PostGIS point
-        anchor_point = db.execute(
-            func.ST_AsText(last_track.position)
-        ).scalar()
+        # Extract lat/lon from the WKT point string
+        anchor_point = str(last_track.position)
         # Parse "POINT(lon lat)"
         coords = anchor_point.replace("POINT(", "").replace(")", "").split()
         anchor_lon, anchor_lat = float(coords[0]), float(coords[1])
@@ -78,7 +76,7 @@ def predict_iceberg(iceberg_id: str):
         velocity_v = 0.0
 
         for i, track in enumerate(tracks):
-            pt = db.execute(func.ST_AsText(track.position)).scalar()
+            pt = str(track.position)
             c = pt.replace("POINT(", "").replace(")", "").split()
             lon, lat = float(c[0]), float(c[1])
 

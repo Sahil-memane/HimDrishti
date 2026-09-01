@@ -12,7 +12,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from geoalchemy2 import Geometry
 
 from db import Base
 
@@ -73,8 +72,8 @@ class Voyage(Base):
     voyage_id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id           = Column(UUID(as_uuid=True), ForeignKey("users.user_id"), nullable=False)
     vessel_id         = Column(UUID(as_uuid=True), ForeignKey("vessels.vessel_id"), nullable=False)
-    start_point       = Column(Geometry("POINT", srid=4326), nullable=False)
-    destination_point = Column(Geometry("POINT", srid=4326), nullable=False)
+    start_point       = Column(Text, nullable=False)
+    destination_point = Column(Text, nullable=False)
     departure_time    = Column(DateTime(timezone=True), nullable=False)
     risk_tolerance    = Column(String(10), default="Medium")
     status            = Column(String(20), default="planned")
@@ -102,7 +101,7 @@ class Waypoint(Base):
     waypoint_id        = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     voyage_id          = Column(UUID(as_uuid=True), ForeignKey("voyages.voyage_id", ondelete="CASCADE"), nullable=False)
     sequence_no        = Column(Integer, nullable=False)
-    position           = Column(Geometry("POINT", srid=4326), nullable=False)
+    position           = Column(Text, nullable=False)
     eta                = Column(DateTime(timezone=True), nullable=False)
     cumulative_fuel_l  = Column(Float)
     segment_risk_score = Column(Float)
@@ -126,7 +125,7 @@ class SeaIceForecast(Base):
     forecast_id       = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     forecast_date     = Column(Date, nullable=False)
     horizon_day       = Column(Integer, nullable=False)
-    grid_cell         = Column(Geometry("POLYGON", srid=4326), nullable=False)
+    grid_cell         = Column(Text, nullable=False)
     ice_concentration = Column(Float, nullable=False)
     confidence        = Column(Float)
 
@@ -145,7 +144,7 @@ class IcebergTrack(Base):
 
     iceberg_id    = Column(String(30), primary_key=True)
     observed_at   = Column(DateTime(timezone=True), primary_key=True)
-    position      = Column(Geometry("POINT", srid=4326), nullable=False)
+    position      = Column(Text, nullable=False)
     velocity_ms   = Column(Float)
     direction_deg = Column(Float)
 
@@ -164,7 +163,7 @@ class IcebergPrediction(Base):
     prediction_id       = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     iceberg_id          = Column(String(30), nullable=False)
     horizon_day         = Column(Integer, nullable=False)
-    predicted_position  = Column(Geometry("POINT", srid=4326), nullable=False)
+    predicted_position  = Column(Text, nullable=False)
     confidence_radius_km = Column(Float)
 
     __table_args__ = (
@@ -182,7 +181,7 @@ class RiskScore(Base):
 
     risk_id        = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     voyage_id      = Column(UUID(as_uuid=True), ForeignKey("voyages.voyage_id", ondelete="CASCADE"), nullable=False)
-    segment        = Column(Geometry("LINESTRING", srid=4326), nullable=False)
+    segment        = Column(Text, nullable=False)
     ice_risk       = Column(Float)
     iceberg_risk   = Column(Float)
     weather_risk   = Column(Float)
@@ -238,3 +237,4 @@ class ExternalDataCache(Base):
     __table_args__ = (
         CheckConstraint("status IN ('fetched', 'validated', 'fused', 'failed')", name="ck_cache_status"),
     )
+
