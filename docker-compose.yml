@@ -59,13 +59,14 @@ services:
       - "8003:8003"
     environment:
       - DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@postgres:5432/himdrishti
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
     depends_on:
       - postgres
 
   frontend:
     build: ./frontend
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - VITE_MAPBOX_TOKEN=${MAPBOX_TOKEN}
 

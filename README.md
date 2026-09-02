@@ -1,12 +1,13 @@
 # HimDrishti — Antarctic Maritime Intelligence & Route Optimization Platform
 
 ![HimDrishti Banner](https://img.shields.io/badge/HimDrishti-Antarctic%20Command-00daf3?style=for-the-badge&logo=compass&logoColor=white)
-![React](https://img.shields.io/badge/React-18.x-61DAFB?style=for-the-badge&logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript)
+![React](https://img.shields.io/badge/React-19.x-61DAFB?style=for-the-badge&logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-6.x-3178C6?style=for-the-badge&logo=typescript)
 ![Three.js](https://img.shields.io/badge/Three.js-WebGL-black?style=for-the-badge&logo=three.js)
-![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=for-the-badge&logo=fastapi)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-4169E1?style=for-the-badge&logo=postgresql)
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=for-the-badge&logo=fastapi)
+![PostgreSQL](https://img.shields.io/badge/PostGIS-15-4169E1?style=for-the-badge&logo=postgresql)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker)
 
 ---
 
@@ -14,7 +15,7 @@
 
 **HimDrishti** is an AI-powered maritime intelligence and route optimization platform built specifically for hostile Antarctic operational environments (McMurdo Station, Ross Sea, Drake Passage, Cape Horn).
 
-Navigating polar waters poses extreme hazards: fast-consolidating sea ice (SIC > 90%), drifting icebergs, unpredictable blizzards, and structural hull breach risks. HimDrishti addresses these challenges by fusing real-time multi-spectral satellite telemetry, deep learning sea-ice forecasting, iceberg trajectory prediction models, and an A* spatial routing engine with natural language LLM explainability.
+Navigating polar waters poses extreme hazards: fast-consolidating sea ice (SIC > 90%), drifting icebergs, unpredictable blizzards, and structural hull breach risks. HimDrishti addresses these challenges by fusing real-time multi-spectral satellite telemetry, deep learning sea-ice forecasting, iceberg trajectory prediction models, and an A* spatial routing engine with natural language LLM explainability (powered by Mistral AI).
 
 ---
 
@@ -55,7 +56,7 @@ Navigating polar waters poses extreme hazards: fast-consolidating sea ice (SIC >
 
 ### 📊 7. Route Analysis & Voyage Manifest (`/analytics`)
 - **KPI Summary**: Total distance (KM), total ETA, estimated fuel burn (L), and overall risk score.
-- **Model 3 LLM Explainability Box**: Displays generated natural language routing reasoning and safety recommendations.
+- **Model 3 LLM Explainability Box**: Displays generated natural language routing reasoning and safety recommendations (Mistral AI).
 - **Per-Leg Risk Breakdown**: Detailed waypoint table showing sequence, LAT/LON, ETA UTC, cumulative fuel, and leg-by-leg risk factors (`ICE RISK`, `ICEBERG RISK`, `WEATHER RISK`, `LEG RISK SCORE`).
 - **Filter Search**: Coordinate search filter input box.
 
@@ -65,7 +66,7 @@ Navigating polar waters poses extreme hazards: fast-consolidating sea ice (SIC >
 
 ```
                         +---------------------------------------+
-                        |        React 18 + Vite Frontend       |
+                        |        React 19 + Vite Frontend       |
                         | (Three.js, Tailwind, TypeScript, TSX) |
                         +-------------------+-------------------+
                                             |
@@ -87,13 +88,13 @@ Navigating polar waters poses extreme hazards: fast-consolidating sea ice (SIC >
                                   |                 |
                         +---------v-----------------v-----------+
                         |   Model 3: A* Routing Engine (8003)   |
-                        |     + LLM Explainability Service      |
+                        |     + LLM Explainability (Mistral)    |
                         +-------------------+-------------------+
                                             |
                                     SQLAlchemy ORM
                                             |
                         +-------------------v-------------------+
-                        |         PostgreSQL 18 Database        |
+                        |    PostGIS 15 (PostgreSQL + Spatial)  |
                         | (10 Core Tables + Spatial Literals)   |
                         +---------------------------------------+
 ```
@@ -117,6 +118,12 @@ HimDrishti/
 │   ├── model1-seaice-service/  # Sea-Ice Forecast Service (Port 8001)
 │   ├── model2-iceberg-service/ # Iceberg Trajectory Service (Port 8002)
 │   └── model3-routing-service/ # A* Routing & LLM Recommendation Service (Port 8003)
+│       ├── main.py             # FastAPI entrypoint, /route & /route/{id}/recommendation
+│       ├── llm_service.py      # Mistral AI LLM integration for route explainability
+│       ├── engine.py           # A* search algorithm implementation
+│       ├── grid.py             # Navigation grid builder
+│       ├── cost.py             # Cost function for A* routing
+│       └── db.py               # SQLAlchemy session & ORM models
 ├── db/
 │   └── migrations/
 │       └── 001_init.sql        # PostgreSQL Schema & Seed Records
@@ -124,7 +131,7 @@ HimDrishti/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── landing/ThreePolarScene.tsx  # 1:1 Three.js 3D Canvas
-│   │   │   └── layout/AppLayout.tsx          # Sidebar Nav & Top App Bar
+│   │   │   └── layout/AppLayout.tsx         # Sidebar Nav & Top App Bar
 │   │   ├── pages/
 │   │   │   ├── LandingPage.tsx              # Master Landing Page Switcher
 │   │   │   ├── LandingPageVariant1.tsx      # Minimal UI Landing Page
@@ -138,72 +145,221 @@ HimDrishti/
 │   │   ├── services/api.ts                  # REST API Client & Fallbacks
 │   │   ├── store/useStore.ts                # Zustand State Stores
 │   │   └── App.tsx                          # React Router configuration
+│   ├── Dockerfile              # Multi-stage build (Vite build → serve)
 │   ├── index.html
 │   └── vite.config.ts
-├── ml/                                      # Machine Learning artifacts
-├── docker-compose.yml
+├── ml/                         # Machine Learning artifacts
+├── .env.example                # Environment variable template
+├── docker-compose.yml          # Full-stack container orchestration
 └── README.md
 ```
 
 ---
 
-## ⚡ Quick Start & Execution Guide
+## ⚡ Quick Start — Docker (Recommended)
+
+> **This is the standardized execution method for all team members.**
+> All 7 services (PostgreSQL, pgAdmin, API Gateway, Model 1, Model 2, Model 3, Frontend) are containerized and orchestrated via a single `docker-compose up` command.
 
 ### Prerequisites
-- **Node.js**: v18.x or higher
-- **Python**: v3.12.x
-- **PostgreSQL**: v18 (or standard PostgreSQL 14+)
+
+| Tool             | Version   | Install Link                                     |
+| :--------------- | :-------- | :----------------------------------------------- |
+| **Docker**       | 24.x+     | [docs.docker.com/get-docker](https://docs.docker.com/get-docker/) |
+| **Docker Compose** | v2.20+  | Bundled with Docker Desktop                      |
+| **Git**          | 2.x+      | [git-scm.com](https://git-scm.com/)              |
+
+> **Note:** You do **not** need Node.js, Python, or PostgreSQL installed locally when using Docker.
 
 ---
 
-### Step 1: Database Initialization
-Ensure local PostgreSQL is running on `localhost:5432` (database: `himdrishti`, user: `postgres`, password: `root`). Run the migration script:
+### Step 1: Clone the Repository
 
-```powershell
-$env:PGPASSWORD="root"; & "D:\PostgreSQL\18\bin\psql.exe" -U postgres -d himdrishti -f "e:\Antigravity\HimDrishti\db\migrations\001_init.sql"
-```
-
----
-
-### Step 2: Start Backend Microservices
-
-Open 4 separate terminals to launch the backend services:
-
-#### **Terminal 1: API Gateway (Port 8000)**
-```powershell
-cmd /c "cd /d e:\Antigravity\HimDrishti\backend\api-gateway && C:\Users\shiva\AppData\Local\Programs\Python\Python312\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
-```
-
-#### **Terminal 2: Model 1 — Sea-Ice Service (Port 8001)**
-```powershell
-cmd /c "cd /d e:\Antigravity\HimDrishti\backend\model1-seaice-service && C:\Users\shiva\AppData\Local\Programs\Python\Python312\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload"
-```
-
-#### **Terminal 3: Model 2 — Iceberg Service (Port 8002)**
-```powershell
-cmd /c "cd /d e:\Antigravity\HimDrishti\backend\model2-iceberg-service && C:\Users\shiva\AppData\Local\Programs\Python\Python312\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8002 --reload"
-```
-
-#### **Terminal 4: Model 3 — A* Routing Service (Port 8003)**
-```powershell
-cmd /c "cd /d e:\Antigravity\HimDrishti\backend\model3-routing-service && C:\Users\shiva\AppData\Local\Programs\Python\Python312\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8003 --reload"
+```bash
+git clone https://github.com/Sahil-memane/HimDrishti.git
+cd HimDrishti
 ```
 
 ---
 
-### Step 3: Start Frontend Application
+### Step 2: Configure Environment Variables
 
-Open a 5th terminal to start the React Vite dev server:
+Copy the template and fill in your credentials:
 
-#### **Terminal 5: React / Vite App (Port 5173)**
-```powershell
-cmd /c "cd /d e:\Antigravity\HimDrishti\frontend && npx vite"
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your values:
+
+```dotenv
+DATABASE_URL=postgresql://postgres:HimDrishti_Secure_DB_2026@localhost:5435/himdrishti
+DB_PASSWORD=HimDrishti_Secure_DB_2026
+JWT_SECRET=<generate-a-random-256-bit-hex-string>
+MAPBOX_TOKEN=<your-mapbox-public-token>
+MISTRAL_API_KEY=<your-mistral-api-key>
+```
+
+| Variable          | Description                                                                 |
+| :---------------- | :-------------------------------------------------------------------------- |
+| `DB_PASSWORD`     | PostgreSQL password (used by all backend services inside Docker)            |
+| `JWT_SECRET`      | Secret key for signing JWT auth tokens (generate via `openssl rand -hex 32`) |
+| `MAPBOX_TOKEN`    | Mapbox GL JS public access token for map rendering                          |
+| `MISTRAL_API_KEY` | Mistral AI API key for Model 3 LLM route explainability                     |
+
+> **Tip — Generate a JWT secret:**
+> ```bash
+> openssl rand -hex 32
+> ```
+
+---
+
+### Step 3: Build & Launch All Services
+
+```bash
+docker compose up --build
+```
+
+> First build may take 3–5 minutes (downloading base images, installing dependencies).
+> Subsequent runs use Docker layer cache and start in seconds.
+
+Wait until you see all services report healthy/ready in the terminal output:
+
+```
+postgres    | LOG:  database system is ready to accept connections
+api-gateway | INFO:  Uvicorn running on http://0.0.0.0:8000
+model1      | INFO:  Uvicorn running on http://0.0.0.0:8001
+model2      | INFO:  Uvicorn running on http://0.0.0.0:8002
+model3      | INFO:  Uvicorn running on http://0.0.0.0:8003
+frontend    | INFO:  Accepting connections at http://localhost:3001
 ```
 
 ---
 
-### Step 4: Open in Web Browser
-Open your browser to: 👉 **`http://localhost:5173`**
+### Step 4: Access the Application
+
+| Service              | URL                          | Description                        |
+| :------------------- | :--------------------------- | :--------------------------------- |
+| **Frontend (Web UI)**| http://localhost:3001         | Main HimDrishti web application    |
+| **API Gateway**      | http://localhost:8010         | FastAPI backend (Swagger: `/docs`) |
+| **Model 1 (Sea-Ice)**| http://localhost:8001         | Sea-Ice Forecast microservice      |
+| **Model 2 (Iceberg)**| http://localhost:8002         | Iceberg Trajectory microservice    |
+| **Model 3 (Routing)**| http://localhost:8003         | A* Routing + LLM explainability    |
+| **pgAdmin**          | http://localhost:5050         | Database admin panel               |
+| **PostgreSQL**       | `localhost:5435`              | Direct DB connection (mapped port) |
+
+---
+
+### Step 5: Stop All Services
+
+```bash
+# Graceful shutdown (preserves data volumes)
+docker compose down
+
+# Full teardown including database volume (⚠️ deletes all data)
+docker compose down -v
+```
+
+---
+
+## 🔄 Execution Sequence (Pipeline Flow)
+
+Understanding how the system processes a voyage request end-to-end:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        USER (Browser @ :3000)                       │
+│  1. Login/Register  →  2. Setup Voyage  →  3. View Dashboard       │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │ POST /api/voyage
+                               ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                    API GATEWAY (FastAPI @ :8010)                     │
+│                                                                      │
+│  • Validates JWT auth token                                          │
+│  • Creates Voyage record in PostgreSQL                               │
+│  • Triggers background pipeline (pipeline.py):                       │
+│                                                                      │
+│    ┌─────────────────────────────────────────────────────────────┐   │
+│    │  PIPELINE ORCHESTRATOR (async background task)              │   │
+│    │                                                             │   │
+│    │  Step 1: Model 1 (Sea-Ice) — pre-seeded on startup         │   │
+│    │          Sea-ice concentration forecasts already in DB      │   │
+│    │                          ↓                                  │   │
+│    │  Step 2: POST http://model2:8002/seed                      │   │
+│    │          Generates iceberg trajectory predictions           │   │
+│    │          Writes to iceberg_predictions table                │   │
+│    │                          ↓                                  │   │
+│    │  Step 3: POST http://model3:8003/route                     │   │
+│    │          A* routing engine computes optimal path            │   │
+│    │          Writes waypoints + risk_scores to DB               │   │
+│    │                          ↓                                  │   │
+│    │  Step 4: voyage.status → "planned"                         │   │
+│    └─────────────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│               MODEL 3: LLM EXPLAINABILITY (@ :8003)                  │
+│                                                                      │
+│  GET /route/{voyage_id}/recommendation                               │
+│                                                                      │
+│  1. Fetches Model 1 + Model 2 + Model 3 outputs from PostgreSQL     │
+│  2. Builds structured prompt with all model data                     │
+│  3. Calls Mistral AI API (mistral-small-latest)                      │
+│  4. Returns JSON: best_route, risk analysis, fuel, ETA, reasoning    │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🔧 Local Development (Without Docker)
+
+> Use this only if you need to debug individual services. Docker is the recommended approach.
+
+### Prerequisites
+- **Node.js** v20.x+
+- **Python** v3.11+
+- **PostgreSQL** v15+ with PostGIS extension
+
+### Backend Services
+
+Each backend service runs as an independent FastAPI/Uvicorn server. Open separate terminals for each:
+
+```bash
+# Terminal 1: API Gateway (Port 8000)
+cd backend/api-gateway
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+# Terminal 2: Model 1 — Sea-Ice Service (Port 8001)
+cd backend/model1-seaice-service
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+
+# Terminal 3: Model 2 — Iceberg Service (Port 8002)
+cd backend/model2-iceberg-service
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8002 --reload
+
+# Terminal 4: Model 3 — A* Routing + LLM Service (Port 8003)
+cd backend/model3-routing-service
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8003 --reload
+```
+
+### Frontend
+
+```bash
+# Terminal 5: Vite Dev Server (Port 5173)
+cd frontend
+npm install
+npm run dev
+```
+
+Open your browser to: 👉 **http://localhost:5173**
+
+> **Note:** When running locally, update `DATABASE_URL` in `.env` to point to `localhost:5432` (native PostgreSQL) instead of `localhost:5435` (Docker-mapped port).
 
 ---
 
@@ -221,16 +377,42 @@ Open your browser to: 👉 **`http://localhost:5173`**
 
 ## 🛰️ API Reference Summary
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `POST` | `/api/auth/register` | Register a new user (`planner` or `mariner`) |
-| `POST` | `/api/auth/login` | Authenticate and obtain JWT access token |
-| `POST` | `/api/voyage` | Create voyage & trigger async Model 1 → 2 → 3 pipeline |
-| `GET` | `/api/voyage/{id}/route` | Retrieve computed waypoints, ETA, fuel, and risk scores |
-| `GET` | `/api/forecast/sea-ice` | Retrieve 7-day predicted Sea-Ice GeoJSON heatmaps |
-| `GET` | `/api/forecast/icebergs` | Retrieve 7-day predicted Iceberg drift markers |
-| `PATCH` | `/api/alerts/{id}/acknowledge` | Acknowledge active diagnostic warning alert |
-| `GET` | `:8003/route/{id}/recommendation` | Retrieve Model 3 LLM explainability & safety rationale |
+| Method | Endpoint | Port | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/register` | 8010 | Register a new user (`planner` or `mariner`) |
+| `POST` | `/api/auth/login` | 8010 | Authenticate and obtain JWT access token |
+| `POST` | `/api/voyage` | 8010 | Create voyage & trigger async Model 1 → 2 → 3 pipeline |
+| `GET` | `/api/voyage/{id}/route` | 8010 | Retrieve computed waypoints, ETA, fuel, and risk scores |
+| `GET` | `/api/forecast/sea-ice` | 8010 | Retrieve 7-day predicted Sea-Ice GeoJSON heatmaps |
+| `GET` | `/api/forecast/icebergs` | 8010 | Retrieve 7-day predicted Iceberg drift markers |
+| `PATCH` | `/api/alerts/{id}/acknowledge` | 8010 | Acknowledge active diagnostic warning alert |
+| `GET` | `/route/{id}/recommendation` | 8003 | Model 3 LLM explainability & safety rationale (Mistral AI) |
+
+---
+
+## 🐳 Docker Services Reference
+
+| Service      | Image / Build Context               | Internal Port | External Port | Description                            |
+| :----------- | :----------------------------------- | :------------ | :------------ | :------------------------------------- |
+| `postgres`   | `postgis/postgis:15-3.4`            | 5432          | 5435          | PostGIS database with spatial support  |
+| `pgadmin`    | `dpage/pgadmin4`                    | 80            | 5050          | Database administration UI             |
+| `api-gateway`| `./backend/api-gateway`             | 8000          | 8010          | FastAPI API Gateway                    |
+| `model1`     | `./backend/model1-seaice-service`   | 8001          | 8001          | Sea-Ice LSTM forecast service          |
+| `model2`     | `./backend/model2-iceberg-service`  | 8002          | 8002          | Iceberg GRU trajectory service         |
+| `model3`     | `./backend/model3-routing-service`  | 8003          | 8003          | A* routing + Mistral LLM service       |
+| `frontend`   | `./frontend`                        | 3000          | 3001          | React/Vite web application             |
+
+---
+
+## 🔐 Environment Variables Reference
+
+| Variable          | Required | Used By                   | Description                                              |
+| :---------------- | :------- | :------------------------ | :------------------------------------------------------- |
+| `DB_PASSWORD`     | ✅       | postgres, api-gateway, model1, model2, model3 | PostgreSQL password                     |
+| `JWT_SECRET`      | ✅       | api-gateway               | Secret for signing/verifying JWT tokens                  |
+| `MAPBOX_TOKEN`    | ✅       | frontend                  | Mapbox GL JS public access token                         |
+| `MISTRAL_API_KEY` | ✅       | model3                    | Mistral AI API key for LLM route explainability          |
+| `DATABASE_URL`    | ⬜       | local dev only            | Full PostgreSQL connection string (auto-set in Docker)   |
 
 ---
 

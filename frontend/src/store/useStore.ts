@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { RouteResponse, WaypointItem, AlertItem } from '../services/api';
+import type { RouteResponse, AlertItem } from '../services/api';
 
 interface UserState {
   userId: string | null;

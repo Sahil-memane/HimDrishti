@@ -5,7 +5,7 @@ import { LandingPageVariant2 } from './LandingPageVariant2';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const [activeVariant, setActiveVariant] = useState<'3d' | 'minimal'>('3d');
+  const [activeVariant, setActiveVariant] = useState<'3d' | 'minimal'>('minimal');
 
   const handleToggleVariant = () => {
     setActiveVariant((prev) => (prev === '3d' ? 'minimal' : '3d'));

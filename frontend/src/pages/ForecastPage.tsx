@@ -15,11 +15,11 @@ export const ForecastPage: React.FC = () => {
     let interval: any = null;
     if (isPlaying) {
       interval = setInterval(() => {
-        setHorizonDay((prev) => (prev >= 7 ? 1 : prev + 1));
+        setHorizonDay(horizonDay >= 7 ? 1 : horizonDay + 1);
       }, 2000);
     }
     return () => clearInterval(interval);
-  }, [isPlaying, setHorizonDay]);
+  }, [isPlaying, setHorizonDay, horizonDay]);
 
   return (
     <div className="relative w-full h-[calc(100vh-4rem)] overflow-hidden bg-[#071420] font-sans">

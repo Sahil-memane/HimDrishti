@@ -14,7 +14,6 @@ interface LandingPageVariant2Props {
 
 export const LandingPageVariant2: React.FC<LandingPageVariant2Props> = ({
   onDeployDashboard,
-  onRequestAccess,
   onSwitchVariant,
   onSignIn,
   onFleet,
@@ -145,12 +144,7 @@ export const LandingPageVariant2: React.FC<LandingPageVariant2Props> = ({
 
         {/* Actions */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={onSignIn}
-            className="hidden sm:block text-xs font-bold tracking-widest text-[#c5c5d2] hover:text-[#00daf3] transition-colors px-3 py-1.5 uppercase cursor-pointer"
-          >
-            SIGN IN
-          </button>
+
 
           <button
             onClick={onDeployDashboard}
@@ -205,13 +199,6 @@ export const LandingPageVariant2: React.FC<LandingPageVariant2Props> = ({
               >
                 Plan Voyage
                 <span className="material-symbols-outlined text-[18px]">explore</span>
-              </button>
-              <button
-                onClick={onSignIn}
-                className="glass-panel border border-[#00daf3] text-[#00daf3] font-bold text-sm px-8 py-4 rounded-xl hover:bg-[#00daf3]/10 transition-all w-full sm:w-auto cursor-pointer flex items-center justify-center gap-2"
-              >
-                Sign In / Register
-                <span className="material-symbols-outlined text-[18px]">login</span>
               </button>
             </div>
           </div>

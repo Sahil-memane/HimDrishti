@@ -12,12 +12,12 @@ export const DashboardPage: React.FC = () => {
   const [selectedProfile, setSelectedProfile] = useState<'SAFEST' | 'BALANCED' | 'EFFICIENT'>('BALANCED');
 
   // Fallback demo waypoints if no route data calculated yet
-  const waypoints = routeData?.waypoints || [
-    { sequence_no: 1, lat: -60.0, lon: 40.0, eta: '2024-11-18T08:00', cumulative_fuel_l: 0, segment_risk_score: 0.12 },
-    { sequence_no: 2, lat: -65.2, lon: 70.4, eta: '2024-11-18T18:30', cumulative_fuel_l: 14200, segment_risk_score: 0.18 },
-    { sequence_no: 3, lat: -71.8, lon: 110.1, eta: '2024-11-19T10:15', cumulative_fuel_l: 38400, segment_risk_score: 0.45 },
-    { sequence_no: 4, lat: -77.846, lon: 166.6682, eta: '2024-11-20T14:00', cumulative_fuel_l: 84500, segment_risk_score: 0.24 },
-  ];
+  // const waypoints = routeData?.waypoints || [
+  //   { sequence_no: 1, lat: -60.0, lon: 40.0, eta: '2024-11-18T08:00', cumulative_fuel_l: 0, segment_risk_score: 0.12 },
+  //   { sequence_no: 2, lat: -65.2, lon: 70.4, eta: '2024-11-18T18:30', cumulative_fuel_l: 14200, segment_risk_score: 0.18 },
+  //   { sequence_no: 3, lat: -71.8, lon: 110.1, eta: '2024-11-19T10:15', cumulative_fuel_l: 38400, segment_risk_score: 0.45 },
+  //   { sequence_no: 4, lat: -77.846, lon: 166.6682, eta: '2024-11-20T14:00', cumulative_fuel_l: 84500, segment_risk_score: 0.24 },
+  // ];
 
   const overallRisk = routeData?.overall_risk_score ?? 0.24;
   const totalFuel = routeData?.total_fuel_estimate_l ?? 84500;

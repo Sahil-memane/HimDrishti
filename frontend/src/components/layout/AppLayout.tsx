@@ -7,6 +7,7 @@ export const AppLayout: React.FC = () => {
   const { email, role, logout } = useAuthStore();
   const { alerts } = useAlertStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   const unackAlerts = alerts.filter((a) => !a.acknowledged).length;
 
@@ -144,6 +145,38 @@ export const AppLayout: React.FC = () => {
               <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-[#ffb4ab] rounded-full border border-[#071420] animate-pulse" />
             )}
           </button>
+          
+          {/* User Profile Dropdown */}
+          <div className="relative ml-2">
+            <button
+              onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+              className="w-9 h-9 rounded-full bg-[#35d4ff]/20 border border-[#35d4ff]/40 flex items-center justify-center text-[#35d4ff] font-bold text-sm flex-shrink-0 cursor-pointer hover:bg-[#35d4ff]/30 transition-colors"
+            >
+              {email ? email.charAt(0).toUpperCase() : 'OP'}
+            </button>
+            
+            {profileMenuOpen && (
+              <div className="absolute right-0 mt-3 w-56 glass-panel rounded-xl shadow-2xl border border-[#3c494e]/60 bg-[#101d29] overflow-hidden">
+                <div className="px-4 py-3 border-b border-[#3c494e]/30">
+                  <p className="font-mono text-sm text-[#d7e4f5] truncate font-bold">
+                    {email || 'Operator'}
+                  </p>
+                  <p className="font-mono text-[10px] text-[#bbc9cf] uppercase truncate mt-0.5">
+                    Role: {role || 'planner'}
+                  </p>
+                </div>
+                <div className="p-2">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-3 py-2 text-xs font-bold uppercase tracking-wider text-[#ffb4ab] hover:bg-[#ffb4ab]/10 rounded flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">logout</span>
+                    Logout
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
