@@ -22,6 +22,7 @@ export const LandingPageVariant2: React.FC<LandingPageVariant2Props> = ({
   onIntelligence,
   onLogistics,
 }) => {
+  const handleSignIn = onRequestAccess || onSignIn;
   const [nmCount, setNmCount] = useState(0);
   const [avoidanceCount, setAvoidanceCount] = useState(0);
   const [fuelCount, setFuelCount] = useState(0);
@@ -146,7 +147,7 @@ export const LandingPageVariant2: React.FC<LandingPageVariant2Props> = ({
         {/* Actions */}
         <div className="flex items-center gap-3">
           <button
-            onClick={onSignIn}
+            onClick={handleSignIn}
             className="hidden sm:block text-xs font-bold tracking-widest text-[#c5c5d2] hover:text-[#00daf3] transition-colors px-3 py-1.5 uppercase cursor-pointer"
           >
             SIGN IN
@@ -171,7 +172,7 @@ export const LandingPageVariant2: React.FC<LandingPageVariant2Props> = ({
           )}
 
           <div className="flex gap-3 text-[#bec7d8]">
-            <button onClick={onSignIn} className="hover:text-[#00daf3] transition-colors cursor-pointer" title="Sign In">
+            <button onClick={handleSignIn} className="hover:text-[#00daf3] transition-colors cursor-pointer" title="Sign In">
               <span className="material-symbols-outlined">account_circle</span>
             </button>
           </div>
@@ -207,7 +208,7 @@ export const LandingPageVariant2: React.FC<LandingPageVariant2Props> = ({
                 <span className="material-symbols-outlined text-[18px]">explore</span>
               </button>
               <button
-                onClick={onSignIn}
+                onClick={handleSignIn}
                 className="glass-panel border border-[#00daf3] text-[#00daf3] font-bold text-sm px-8 py-4 rounded-xl hover:bg-[#00daf3]/10 transition-all w-full sm:w-auto cursor-pointer flex items-center justify-center gap-2"
               >
                 Sign In / Register

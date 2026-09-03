@@ -1,10 +1,12 @@
 import React from 'react';
-import { useAlertStore, useForecastStore } from '../store/useStore';
+import { useAlertStore, useForecastStore, useVoyageStore } from '../store/useStore';
 import { api } from '../services/api';
+import { InteractivePolarMap } from '../components/map/InteractivePolarMap';
 
 export const AlertsPage: React.FC = () => {
   const { alerts, acknowledgeAlert } = useAlertStore();
   const { horizonDay, setHorizonDay } = useForecastStore();
+  const { routeData } = useVoyageStore();
 
   const handleAck = async (id: string) => {
     try {
@@ -15,18 +17,26 @@ export const AlertsPage: React.FC = () => {
     acknowledgeAlert(id);
   };
 
+  const waypoints = routeData?.waypoints || [
+    { sequence_no: 1, lat: -60.0, lon: 40.0 },
+    { sequence_no: 2, lat: -65.2, lon: 70.4 },
+    { sequence_no: 3, lat: -71.8, lon: 110.1 },
+    { sequence_no: 4, lat: -77.846, lon: 166.6682 },
+  ];
+
   return (
-    <div className="relative w-full h-[calc(100vh-4rem)] overflow-hidden bg-[#030b17] font-sans">
-      {/* Background Satellite Photo */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center opacity-30"
-        style={{
-          backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuBPUK4Q2W43emUzMGhjoRv5Xu7lpG4NuPj_dB0rJg4DL5g6WWndVu1BAOpdxVWenKGR3HbW-GpGMbzB1X7OnQE-1Yi6FjJZSKc7MPXuo18g7N6rpvTUhZCsUaXrVtydwVqEoke2TzQvXQA2sVjZmNVxjeJ5joLP8r_lQ-LDaeGnnn2S1EKPeeDd6qaacAUVrEmMJvfOg2ShoZWVCeVOOlTg4e2M6QwE_5sUtfZvZMC6ESJbT5uvKi7M')`
-        }}
+    <div className="relative w-full h-[calc(100vh-4rem)] overflow-hidden bg-[#071420] font-sans">
+      {/* Live Map Background */}
+      <InteractivePolarMap
+        waypoints={waypoints}
+        showSeaIce={true}
+        showIcebergs={true}
+        showRiskZones={true}
+        className="absolute inset-0 w-full h-full"
       />
 
-      {/* Main Container / Drawer */}
-      <div className="absolute right-0 top-0 bottom-0 w-full max-w-[440px] bg-[#081C2C]/90 backdrop-blur-2xl border-l border-[#aee9ff]/20 shadow-2xl flex flex-col z-20">
+      {/* Main Container / Diagnostics Drawer */}
+      <div className="absolute right-0 top-0 bottom-0 w-full max-w-[440px] bg-[#071420]/90 backdrop-blur-2xl border-l border-[#aee9ff]/20 shadow-2xl flex flex-col z-20">
         {/* Drawer Header */}
         <div className="p-6 border-b border-[#3c494e]/40 flex items-center justify-between">
           <div>
@@ -48,8 +58,8 @@ export const AlertsPage: React.FC = () => {
                 item.acknowledged
                   ? 'bg-[#14212d]/40 border-[#3c494e]/30 opacity-60 grayscale'
                   : item.severity === 'high'
-                  ? 'bg-[#14212d]/80 border-[#f43f5e]/60 shadow-[0_0_12px_rgba(244,63,94,0.3)]'
-                  : 'bg-[#14212d]/80 border-[#f59e0b]/60 shadow-[0_0_12px_rgba(245,158,11,0.3)]'
+                  ? 'bg-[#14212d]/90 border-[#f43f5e]/60 shadow-[0_0_12px_rgba(244,63,94,0.3)]'
+                  : 'bg-[#14212d]/90 border-[#f59e0b]/60 shadow-[0_0_12px_rgba(245,158,11,0.3)]'
               }`}
             >
               <div
@@ -99,7 +109,7 @@ export const AlertsPage: React.FC = () => {
         </div>
 
         {/* Drawer Footer Slider */}
-        <div className="p-6 border-t border-[#3c494e]/40 bg-[#040C14]/60">
+        <div className="p-5 border-t border-[#3c494e]/40 bg-[#040C14]/90">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-bold text-[#bbc9cf] uppercase">
               7-DAY FORECAST OVERRIDE

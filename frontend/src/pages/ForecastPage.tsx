@@ -1,82 +1,87 @@
 import React, { useState, useEffect } from 'react';
-import { useForecastStore } from '../store/useStore';
+import { useForecastStore, useVoyageStore } from '../store/useStore';
+import { InteractivePolarMap } from '../components/map/InteractivePolarMap';
+import type { MapWaypoint } from '../components/map/InteractivePolarMap';
 
 export const ForecastPage: React.FC = () => {
   const { horizonDay, setHorizonDay } = useForecastStore();
+  const { routeData } = useVoyageStore();
   const [isPlaying, setIsPlaying] = useState(false);
+
+  const [showSic, setShowSic] = useState(true);
+  const [showIcebergs, setShowIcebergs] = useState(true);
+  const [showRiskZones, setShowRiskZones] = useState(true);
 
   // Predictive confidence linear decay calculation (94.2% -> 42.8%)
   const startConf = 94.2;
   const endConf = 42.8;
   const confidence = (startConf - ((startConf - endConf) / 6) * (horizonDay - 1)).toFixed(1);
 
+  // Waypoints directly from store routeData
+  const waypoints: MapWaypoint[] = routeData?.waypoints || [];
+
   // Auto-play timeline interval
   useEffect(() => {
     let interval: any = null;
     if (isPlaying) {
       interval = setInterval(() => {
-        setHorizonDay((prev) => (prev >= 7 ? 1 : prev + 1));
+        setHorizonDay(horizonDay >= 7 ? 1 : horizonDay + 1);
       }, 2000);
     }
     return () => clearInterval(interval);
-  }, [isPlaying, setHorizonDay]);
+  }, [isPlaying, horizonDay, setHorizonDay]);
 
   return (
     <div className="relative w-full h-[calc(100vh-4rem)] overflow-hidden bg-[#071420] font-sans">
-      {/* Background Aerial Photo */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center opacity-40"
-        style={{
-          backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuDF8N5xboyfeWugDvEU1IGb_SHR278G_9oangL3fXvqOIVF7Kpr27aO7j0yggjayKIiNP6ioNnQLOw9b-gY3bnTzhDfD9DYpH782JYLlK835La50t6kl_brsc4AlqUMz7E5tCm8QzzK62LpDrfjxbfCmkBgUNDS4k4yqmyT7dNhkAdL97evzPeBdakvI2_DFcE53ZNeeiXxRG4U3epb72k0ZGb94vDH_yvdlNOgOW6n7zBo6rmBVMzv')`
-        }}
+      {/* Interactive GIS Satellite Map Layer */}
+      <InteractivePolarMap
+        waypoints={waypoints}
+        showSeaIce={showSic}
+        showIcebergs={showIcebergs}
+        showRiskZones={showRiskZones}
+        onToggleSeaIce={(show) => setShowSic(show)}
+        onToggleIcebergs={(show) => setShowIcebergs(show)}
+        onToggleRiskZones={(show) => setShowRiskZones(show)}
+        className="absolute inset-0 w-full h-full"
       />
 
-      {/* Sector Readout */}
-      <div className="absolute top-8 left-10 pointer-events-none hidden lg:block">
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-bold text-[#aee9ff]/60 tracking-wider">
-            SECTOR 7G ANALYSIS
+      {/* Top Floating Sector Readout */}
+      <div className="absolute top-16 left-4 z-10 pointer-events-auto">
+        <div className="glass-panel p-3.5 rounded-xl border border-[#00daf3]/30 bg-[#071420]/85 backdrop-blur-md flex flex-col gap-1 shadow-xl">
+          <span className="text-[11px] font-bold text-[#00daf3] tracking-wider uppercase">
+            SECTOR 7G ANALYSIS — DAY {horizonDay}
           </span>
-          <span className="font-mono text-xl text-white font-bold">ICE_DENSITY: 84.3%</span>
-          <span className="font-mono text-xs text-[#ffb4ab] flex items-center gap-1.5 mt-1">
-            <span className="material-symbols-outlined text-[16px]">warning</span>
-            FRACTURE DETECTED
+          <span className="font-mono text-lg text-white font-bold">
+            ICE_DENSITY: {(70.2 + horizonDay * 2.4).toFixed(1)}%
           </span>
-        </div>
-      </div>
-
-      {/* Map Marker Pin */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center">
-        <div className="w-12 h-12 rounded-full border border-[#aee9ff]/40 bg-[#aee9ff]/10 flex items-center justify-center relative animate-pulse">
-          <span className="material-symbols-outlined text-[#aee9ff] text-[24px]">my_location</span>
-        </div>
-        <div className="mt-3 bg-[#14212d]/90 backdrop-blur-md border border-[#aee9ff]/30 px-3 py-2 rounded shadow-lg text-center">
-          <p className="font-mono text-xs text-[#aee9ff]">LAT: 77°50'S | LON: 166°40'E</p>
-          <p className="text-[10px] font-bold text-[#bbc9cf] uppercase">MCMURDO STATION PROXIMITY</p>
+          <span className="font-mono text-[10px] text-[#ffb4ab] flex items-center gap-1 mt-0.5">
+            <span className="material-symbols-outlined text-[14px]">warning</span>
+            PREDICTED DRIFT CORRIDOR
+          </span>
         </div>
       </div>
 
       {/* Forecast Control Panel (Bottom) */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-3xl px-4">
-        <div className="bg-[#14212d]/85 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl p-6 flex flex-col gap-6">
+      <div className="absolute bottom-4 left-4 md:left-1/2 md:-translate-x-1/2 w-full max-w-xl px-4 z-10 pointer-events-auto">
+        <div className="bg-[#071420]/90 backdrop-blur-2xl border border-[#00daf3]/30 rounded-xl shadow-2xl p-4 flex flex-col gap-4">
           {/* Panel Header */}
-          <div className="flex justify-between items-center border-b border-[#3c494e]/40 pb-4">
-            <div className="flex items-center gap-3">
-              <span className="material-symbols-outlined text-[#aee9ff]">timeline</span>
-              <h3 className="font-bold text-xs text-white tracking-widest uppercase">
-                7-DAY FORECAST TIMELINE
+          <div className="flex justify-between items-center border-b border-[#3c494e]/40 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#00daf3] text-[18px]">timeline</span>
+              <h3 className="font-bold text-xs text-white tracking-wider uppercase">
+                7-DAY PREDICTIVE FORECAST TIMELINE
               </h3>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <div className="flex flex-col items-end">
-                <span className="text-[10px] font-bold text-[#bbc9cf] uppercase">
-                  PREDICTIVE CONFIDENCE
+                <span className="text-[9px] font-bold text-[#bbc9cf] uppercase">
+                  CONFIDENCE
                 </span>
                 <span
-                  className={`font-mono text-base font-bold ${
+                  className={`font-mono text-sm font-bold ${
                     Number(confidence) > 80
-                      ? 'text-[#aee9ff]'
+                      ? 'text-[#00daf3]'
                       : Number(confidence) > 60
                       ? 'text-[#b3c6db]'
                       : 'text-[#ffb4ab]'
@@ -86,53 +91,53 @@ export const ForecastPage: React.FC = () => {
                 </span>
               </div>
 
-              <div className="w-px h-8 bg-[#3c494e]/40" />
+              <div className="w-px h-6 bg-[#3c494e]/40" />
 
               <button
                 type="button"
                 onClick={() => setIsPlaying(!isPlaying)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded bg-[#aee9ff]/10 border border-[#aee9ff]/30 hover:bg-[#aee9ff]/20 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#00daf3]/10 border border-[#00daf3]/30 hover:bg-[#00daf3]/20 transition-all cursor-pointer"
               >
                 <span
                   className={`w-2 h-2 rounded-full ${
-                    isPlaying ? 'bg-[#39ff14] animate-ping' : 'bg-[#aee9ff]'
+                    isPlaying ? 'bg-[#39ff14] animate-ping' : 'bg-[#00daf3]'
                   }`}
                 />
-                <span className="font-mono text-xs text-[#aee9ff] uppercase font-bold">
-                  {isPlaying ? 'PAUSE' : 'AUTO-PLAY'}
+                <span className="font-mono text-[10px] text-[#00daf3] uppercase font-bold">
+                  {isPlaying ? 'PAUSE' : 'PLAY'}
                 </span>
               </button>
             </div>
           </div>
 
           {/* Slider Controls */}
-          <div className="py-2 w-full">
+          <div className="w-full">
             <input
               type="range"
               min="1"
               max="7"
               value={horizonDay}
               onChange={(e) => setHorizonDay(parseInt(e.target.value))}
-              className="w-full accent-[#49d6ff] cursor-pointer"
+              className="w-full accent-[#00daf3] cursor-pointer"
             />
 
             {/* Timeline Day Markers */}
-            <div className="flex justify-between w-full mt-3 px-1">
+            <div className="flex justify-between w-full mt-2 px-1">
               {[1, 2, 3, 4, 5, 6, 7].map((day) => (
                 <button
                   key={day}
                   type="button"
                   onClick={() => setHorizonDay(day)}
-                  className="flex flex-col items-center gap-1 cursor-pointer group"
+                  className="flex flex-col items-center gap-0.5 cursor-pointer group"
                 >
                   <span
-                    className={`w-1.5 h-3 rounded-full transition-all ${
-                      horizonDay === day ? 'bg-[#aee9ff] h-4' : 'bg-[#3c494e]'
+                    className={`w-1.5 h-2.5 rounded-full transition-all ${
+                      horizonDay === day ? 'bg-[#00daf3] h-3.5' : 'bg-[#3c494e]'
                     }`}
                   />
                   <span
-                    className={`font-mono text-[10px] font-bold ${
-                      horizonDay === day ? 'text-[#aee9ff]' : 'text-[#bbc9cf]'
+                    className={`font-mono text-[9px] font-bold ${
+                      horizonDay === day ? 'text-[#00daf3]' : 'text-[#bbc9cf]'
                     }`}
                   >
                     DAY {day}

@@ -1,35 +1,26 @@
-version: '3.8'
-
 services:
   postgres:
-    image: postgis/postgis:15-3.4
+    image: postgres:15-alpine
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-root}
       POSTGRES_DB: himdrishti
     ports:
-      - "5435:5432"
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./db/migrations:/docker-entrypoint-initdb.d
 
-  pgadmin:
-    image: dpage/pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: "HimDrishti_Admin!"
-    ports:
-      - "5050:80"
-    depends_on:
-      - postgres
-
   api-gateway:
     build: ./backend/api-gateway
     ports:
-      - "8010:8000"
+      - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@postgres:5432/himdrishti
-      - JWT_SECRET=${JWT_SECRET}
+      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD:-root}@postgres:5432/himdrishti
+      - JWT_SECRET=${JWT_SECRET:-a484fb64a98505b75edc6515ed2e59774a6f5f819b3692026077395f30577398}
+      - MODEL1_URL=http://model1:8001
+      - MODEL2_URL=http://model2:8002
+      - MODEL3_URL=http://model3:8003
     depends_on:
       - postgres
 
@@ -38,16 +29,18 @@ services:
     ports:
       - "8001:8001"
     environment:
-      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@postgres:5432/himdrishti
+      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD:-root}@postgres:5432/himdrishti
     volumes:
       - ./ml/artifacts:/app/artifacts
+    depends_on:
+      - postgres
 
   model2:
     build: ./backend/model2-iceberg-service
     ports:
       - "8002:8002"
     environment:
-      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@postgres:5432/himdrishti
+      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD:-root}@postgres:5432/himdrishti
     volumes:
       - ./ml/artifacts:/app/artifacts
     depends_on:
@@ -58,7 +51,7 @@ services:
     ports:
       - "8003:8003"
     environment:
-      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@postgres:5432/himdrishti
+      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD:-root}@postgres:5432/himdrishti
     depends_on:
       - postgres
 
@@ -66,8 +59,8 @@ services:
     build: ./frontend
     ports:
       - "3000:3000"
-    environment:
-      - VITE_MAPBOX_TOKEN=${MAPBOX_TOKEN}
+    depends_on:
+      - api-gateway
 
 volumes:
   pgdata:

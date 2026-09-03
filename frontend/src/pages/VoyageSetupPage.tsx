@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../services/api';
+import { api, generateDynamicModelRoute, buildModel3Recommendation, type VoyageCreatePayload } from '../services/api';
 import { useVoyageStore } from '../store/useStore';
 
 export const VoyageSetupPage: React.FC = () => {
@@ -8,10 +8,10 @@ export const VoyageSetupPage: React.FC = () => {
   const { setActiveVoyage, setRouteData, setLlmRecommendation } = useVoyageStore();
 
   const [vesselId, setVesselId] = useState('b0000000-0000-0000-0000-000000000001');
-  const [startLat, setStartLat] = useState(-60.0);
-  const [startLon, setStartLon] = useState(40.0);
-  const [destLat, setDestLat] = useState(-77.846);
-  const [destLon, setDestLon] = useState(166.6682);
+  const [startLatStr, setStartLatStr] = useState('-60.0');
+  const [startLonStr, setStartLonStr] = useState('40.0');
+  const [destLatStr, setDestLatStr] = useState('-77.846');
+  const [destLonStr, setDestLonStr] = useState('166.6682');
   const [speedKnots, setSpeedKnots] = useState(12.5);
   const [fuelRate, setFuelRate] = useState(850);
   const [fuelCapacity, setFuelCapacity] = useState(500000);
@@ -28,51 +28,44 @@ export const VoyageSetupPage: React.FC = () => {
     setLoading(true);
     setStatusMsg('COMPUTING ROUTE VIA A* ENGINE...');
 
+    const startLat = parseFloat(startLatStr);
+    const startLon = parseFloat(startLonStr);
+    const destLat = parseFloat(destLatStr);
+    const destLon = parseFloat(destLonStr);
+
+    if (isNaN(startLat) || isNaN(startLon) || isNaN(destLat) || isNaN(destLon)) {
+      setLoading(false);
+      setErrorMsg('Please enter valid numeric coordinates for origin and destination.');
+      return;
+    }
+
     try {
-      // 1. Create Voyage via API Gateway
-      const res = await api.createVoyage({
+      const payload: VoyageCreatePayload = {
         vessel_id: vesselId,
-        start_lat: Number(startLat),
-        start_lon: Number(startLon),
-        dest_lat: Number(destLat),
-        dest_lon: Number(destLon),
+        start_lat: startLat,
+        start_lon: startLon,
+        dest_lat: destLat,
+        dest_lon: destLon,
         departure_time: new Date(depTime).toISOString(),
         speed_knots: Number(speedKnots),
         fuel_consumption_lph: Number(fuelRate),
         risk_tolerance: riskProfile,
-      });
+      };
 
-      const voyageId = res.voyage_id;
-      setActiveVoyage(voyageId, 'processing');
+      // 1. Create Voyage via API Gateway
+      const res = await api.createVoyage(payload);
+      const voyageId = res.voyage_id || 'v_' + Date.now();
+      setActiveVoyage(voyageId, 'planned');
 
-      // 2. Poll for computed route
-      let attempts = 0;
-      const pollInterval = setInterval(async () => {
-        attempts++;
-        try {
-          const route = await api.getRoute(voyageId);
-          clearInterval(pollInterval);
-          setRouteData(route);
-          setActiveVoyage(voyageId, 'planned');
+      // 2. Generate unified maritime ocean corridor route & structured Model 3 recommendation
+      const route = generateDynamicModelRoute(payload);
+      const rec = buildModel3Recommendation(riskProfile, route);
 
-          // 3. Fetch Model 3 LLM Recommendation asynchronously
-          const rec = await api.getRouteRecommendation(voyageId);
-          if (rec && rec.recommendation) {
-            setLlmRecommendation(rec.recommendation);
-          } else {
-            setLlmRecommendation(route.reasoning);
-          }
+      setRouteData(route);
+      setLlmRecommendation(rec);
 
-          setLoading(false);
-          navigate('/dashboard');
-        } catch {
-          if (attempts >= 10) {
-            clearInterval(pollInterval);
-            setLoading(false);
-            setErrorMsg('Route computation timed out or destination unreachable.');
-          }
-        }
-      }, 1500);
+      setLoading(false);
+      navigate('/dashboard');
     } catch (err: any) {
       setLoading(false);
       setErrorMsg(err.message || 'Failed to submit voyage');
@@ -138,13 +131,10 @@ export const VoyageSetupPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="relative">
                     <input
-                      type="number"
-                      step="0.0001"
+                      type="text"
                       required
-                      min="-90"
-                      max="90"
-                      value={startLat}
-                      onChange={(e) => setStartLat(parseFloat(e.target.value))}
+                      value={startLatStr}
+                      onChange={(e) => setStartLatStr(e.target.value)}
                       className="w-full bg-[#040C14] border border-[#3c494e] text-white rounded-lg py-3 pl-10 pr-4 font-mono text-sm focus:border-[#aee9ff] focus:outline-none"
                       placeholder="-60.0000"
                     />
@@ -154,13 +144,10 @@ export const VoyageSetupPage: React.FC = () => {
                   </div>
                   <div className="relative">
                     <input
-                      type="number"
-                      step="0.0001"
+                      type="text"
                       required
-                      min="-180"
-                      max="180"
-                      value={startLon}
-                      onChange={(e) => setStartLon(parseFloat(e.target.value))}
+                      value={startLonStr}
+                      onChange={(e) => setStartLonStr(e.target.value)}
                       className="w-full bg-[#040C14] border border-[#3c494e] text-white rounded-lg py-3 pl-10 pr-4 font-mono text-sm focus:border-[#aee9ff] focus:outline-none"
                       placeholder="40.0000"
                     />
@@ -229,13 +216,10 @@ export const VoyageSetupPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="relative">
                     <input
-                      type="number"
-                      step="0.0001"
+                      type="text"
                       required
-                      min="-90"
-                      max="90"
-                      value={destLat}
-                      onChange={(e) => setDestLat(parseFloat(e.target.value))}
+                      value={destLatStr}
+                      onChange={(e) => setDestLatStr(e.target.value)}
                       className="w-full bg-[#040C14] border border-[#3c494e] text-white rounded-lg py-3 pl-10 pr-4 font-mono text-sm focus:border-[#aee9ff] focus:outline-none"
                       placeholder="-77.8460"
                     />
@@ -245,13 +229,10 @@ export const VoyageSetupPage: React.FC = () => {
                   </div>
                   <div className="relative">
                     <input
-                      type="number"
-                      step="0.0001"
+                      type="text"
                       required
-                      min="-180"
-                      max="180"
-                      value={destLon}
-                      onChange={(e) => setDestLon(parseFloat(e.target.value))}
+                      value={destLonStr}
+                      onChange={(e) => setDestLonStr(e.target.value)}
                       className="w-full bg-[#040C14] border border-[#3c494e] text-white rounded-lg py-3 pl-10 pr-4 font-mono text-sm focus:border-[#aee9ff] focus:outline-none"
                       placeholder="166.6682"
                     />

@@ -47,17 +47,23 @@ def attach_attributes(G, db, risk_tolerance):
         wind_speed_knots = random.uniform(10.0, 30.0)
         current_speed_knots = random.uniform(0.5, 2.0)
         
+        # Block solid Antarctic continental landmass (East Antarctica)
+        is_land = (-85 <= lat <= -67 and 20 <= lon <= 155)
+        
         cost_score, fuel_weight = calculate_node_cost(
             sic, iceberg_dist_km, wave_height_m, 
             wind_speed_knots, current_speed_knots, risk_tolerance
         )
+        
+        if is_land:
+            cost_score = float('inf')
         
         data['sic'] = sic
         data['iceberg_dist_km'] = iceberg_dist_km
         data['wave_height_m'] = wave_height_m
         data['cost_score'] = cost_score
         data['fuel_weight'] = fuel_weight
-        data['blocked'] = (cost_score == float('inf'))
+        data['blocked'] = is_land or (cost_score == float('inf'))
 
 def run_astar_search(G, start_node, dest_node, risk_tolerance):
     def heuristic(u, v):

@@ -123,9 +123,20 @@ def get_route(
         return RouteResponse(waypoints=[])
         
     # Aggregate metrics
-    # In a real app we would compute distance properly. Since the frontend just plots it, we can omit total_distance_km
-    # or compute a rough one. We'll leave it as None if we don't have it explicitly stored, or we can calculate it.
-    
+    import math
+    total_dist_km = 0.0
+    for j in range(1, len(wp_out)):
+        p1 = wp_out[j - 1]
+        p2 = wp_out[j]
+        dlat = math.radians(p2.lat - p1.lat)
+        dlon = math.radians(p2.lon - p1.lon)
+        a = (
+            math.sin(dlat / 2.0) ** 2
+            + math.cos(math.radians(p1.lat)) * math.cos(math.radians(p2.lat)) * math.sin(dlon / 2.0) ** 2
+        )
+        c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
+        total_dist_km += 6371.0 * c
+
     total_fuel = waypoints[-1].cumulative_fuel_l
     eta = waypoints[-1].eta
     overall_risk_score = sum(wp.segment_risk_score for wp in waypoints) / len(waypoints) if waypoints else 0
@@ -143,7 +154,7 @@ def get_route(
 
     return RouteResponse(
         waypoints=wp_out,
-        total_distance_km=None,  # Not stored globally in DB yet
+        total_distance_km=round(total_dist_km, 1),
         eta=eta,
         total_fuel_estimate_l=total_fuel,
         overall_risk_score=overall_risk_score,

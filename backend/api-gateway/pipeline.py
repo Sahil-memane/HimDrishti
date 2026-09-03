@@ -13,9 +13,27 @@ from models import Voyage
 
 logger = logging.getLogger(__name__)
 
-# Internal docker-network URLs (service names from docker-compose.yml)
-MODEL2_URL = "http://model2:8002"
-MODEL3_URL = "http://model3:8003"
+import os
+
+MODEL2_URL = os.getenv("MODEL2_URL", "http://localhost:8002")
+MODEL3_URL = os.getenv("MODEL3_URL", "http://localhost:8003")
+
+
+def _post_with_fallback(primary_url: str, endpoint: str, json_data: dict = None, timeout: int = 60):
+    urls_to_try = [f"{primary_url}{endpoint}"]
+    # Add localhost fallback if primary is a docker service name
+    if "localhost" not in primary_url and "127.0.0.1" not in primary_url:
+        port = primary_url.split(":")[-1] if ":" in primary_url else "8000"
+        urls_to_try.append(f"http://localhost:{port}{endpoint}")
+
+    last_err = None
+    for url in urls_to_try:
+        try:
+            return http.post(url, json=json_data, timeout=timeout)
+        except Exception as e:
+            last_err = e
+    raise last_err
+
 
 
 from sqlalchemy import func as geo_func
@@ -53,7 +71,7 @@ def process_voyage_pipeline(voyage_id: str, db: Session):
         # -- Step 2: Model 2 (Iceberg trajectories) --
         logger.info(f"Voyage {voyage_id}: Triggering Model 2 /seed ...")
         try:
-            r2 = http.post(f"{MODEL2_URL}/seed", timeout=15)
+            r2 = _post_with_fallback(MODEL2_URL, "/seed", timeout=15)
             logger.info(f"Voyage {voyage_id}: Model 2 responded {r2.status_code}")
         except Exception as e:
             logger.warning(f"Voyage {voyage_id}: Model 2 unreachable ({e}), continuing anyway.")
@@ -75,7 +93,7 @@ def process_voyage_pipeline(voyage_id: str, db: Session):
             "departure_time":     voyage.departure_time.isoformat(),
         }
 
-        r3 = http.post(f"{MODEL3_URL}/route", json=payload, timeout=60)
+        r3 = _post_with_fallback(MODEL3_URL, "/route", json_data=payload, timeout=60)
 
         if r3.status_code == 200:
             voyage.status = "planned"

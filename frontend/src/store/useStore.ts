@@ -1,5 +1,11 @@
 import { create } from 'zustand';
-import type { RouteResponse, WaypointItem, AlertItem } from '../services/api';
+import {
+  type RouteResponse,
+  type AlertItem,
+  generateDynamicModelRoute,
+  buildModel3Recommendation,
+  type Model3Recommendation,
+} from '../services/api';
 
 interface UserState {
   userId: string | null;
@@ -13,11 +19,11 @@ interface UserState {
 interface VoyageState {
   activeVoyageId: string | null;
   voyageStatus: string;
-  routeData: RouteResponse | null;
-  llmRecommendation: string | null;
+  routeData: RouteResponse;
+  llmRecommendation: Model3Recommendation | string;
   setActiveVoyage: (id: string, status?: string) => void;
   setRouteData: (data: RouteResponse) => void;
-  setLlmRecommendation: (rec: string) => void;
+  setLlmRecommendation: (rec: Model3Recommendation | string) => void;
 }
 
 interface ForecastState {
@@ -30,6 +36,22 @@ interface AlertState {
   setAlerts: (alerts: AlertItem[]) => void;
   acknowledgeAlert: (alertId: string) => void;
 }
+
+// Initial active voyage route calculation
+const initialInputs = {
+  vessel_id: 'b0000000-0000-0000-0000-000000000001',
+  start_lat: -60.0,
+  start_lon: 40.0,
+  dest_lat: -77.846,
+  dest_lon: 166.6682,
+  departure_time: new Date().toISOString(),
+  speed_knots: 12.5,
+  fuel_consumption_lph: 850,
+  risk_tolerance: 'balanced' as const,
+};
+
+const initialRoute = generateDynamicModelRoute(initialInputs);
+const initialRec = buildModel3Recommendation('balanced', initialRoute);
 
 export const useAuthStore = create<UserState>((set) => ({
   userId: localStorage.getItem('himdrishti_user_id'),
@@ -55,10 +77,10 @@ export const useAuthStore = create<UserState>((set) => ({
 }));
 
 export const useVoyageStore = create<VoyageState>((set) => ({
-  activeVoyageId: 'b0000000-0000-0000-0000-000000000001', // Demo voyage ID
+  activeVoyageId: 'b0000000-0000-0000-0000-000000000001',
   voyageStatus: 'planned',
-  routeData: null,
-  llmRecommendation: null,
+  routeData: initialRoute,
+  llmRecommendation: initialRec,
 
   setActiveVoyage: (id, status = 'planned') => set({ activeVoyageId: id, voyageStatus: status }),
   setRouteData: (data) => set({ routeData: data }),
