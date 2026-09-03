@@ -1,4 +1,5 @@
 import React from 'react';
+import { GlobeWidget } from '../components/landing/GlobeWidget';
 
 interface LandingPageVariant1Props {
   onPlanVoyage?: () => void;
@@ -15,8 +16,14 @@ export const LandingPageVariant1: React.FC<LandingPageVariant1Props> = ({
 }) => {
   return (
     <div className="bg-[#071420] text-[#d7e4f5] min-h-screen font-sans overflow-x-hidden relative">
-      {/* Background Shader & Radial Gradient */}
-      <div className="fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#003549]/30 via-[#071420] to-[#030f1b] pointer-events-none" />
+
+
+      {/* 3D Globe Layer - Full Screen Uncropped */}
+      <div className="absolute top-0 left-0 w-full h-[100vh] lg:h-[120vh] z-0 pointer-events-none">
+        <div className="absolute inset-0 pointer-events-auto">
+          <GlobeWidget />
+        </div>
+      </div>
 
       {/* Navigation Header */}
       <nav className="fixed top-0 w-full z-50 glass-panel border-b-0 border-[#3c494e]/30 h-20 flex items-center justify-between px-6 md:px-10">
@@ -30,9 +37,6 @@ export const LandingPageVariant1: React.FC<LandingPageVariant1Props> = ({
         </div>
 
         <div className="hidden md:flex items-center gap-8 text-xs tracking-widest font-bold text-[#bbc9cf] uppercase">
-          <button onClick={onSignIn} className="hover:text-[#aee9ff] transition-colors cursor-pointer uppercase">
-            SIGN IN
-          </button>
           <button onClick={onPlanVoyage} className="hover:text-[#aee9ff] transition-colors cursor-pointer uppercase">
             VOYAGE SETUP
           </button>
@@ -67,9 +71,12 @@ export const LandingPageVariant1: React.FC<LandingPageVariant1Props> = ({
         </div>
       </nav>
 
+      {/* Background Shader & Radial Gradient */}
+      <div className="fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#003549]/30 via-[#071420] to-[#030f1b] pointer-events-none" />
+
       {/* Main Hero Content */}
-      <main className="relative z-10 pt-32 pb-24 px-6 md:px-10 min-h-screen flex flex-col justify-center max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+      <main className="relative z-10 pt-32 pb-24 px-6 md:px-10 min-h-screen flex flex-col justify-center max-w-7xl mx-auto pointer-events-none">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center pointer-events-auto">
           {/* Left Column: Headline & Controls */}
           <div className="lg:col-span-6 flex flex-col gap-6">
             <div className="inline-flex items-center gap-2 glass-panel rounded-full px-4 py-1.5 w-fit border-[#aee9ff]/30">
@@ -127,38 +134,8 @@ export const LandingPageVariant1: React.FC<LandingPageVariant1Props> = ({
             </div>
           </div>
 
-          {/* Right Column: Visualization Radar / Map */}
-          <div className="lg:col-span-6 mt-8 lg:mt-0 relative h-[450px] lg:h-[550px] glass-panel rounded-xl overflow-hidden flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#1f2b38]/40 via-[#071420]/80 to-[#071420] z-0" />
-            
-            <div className="relative z-10 w-full h-full rounded-lg border border-[#3c494e]/30 bg-[#101d29]/50 overflow-hidden group">
-              <div 
-                className="absolute inset-0 bg-cover bg-center opacity-75 mix-blend-screen transition-transform duration-700 group-hover:scale-105"
-                style={{
-                  backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuAl4UtB-R1I1wbw6oXJ9n3agZV1iZS1ao3n0AEOuIwnYyM4-8rMxkQIg7ulI30_xtj1lJTOB22fmJpzcCJe_xFabRq4X1LKF0tu5g2IxmAOVRbg31LB3z6QyBO34EfgQ-ld9iiIiAM-gd_Hz8T1MSf1gboYq1FPJdVYxwRkf1LN-xpwKLpGnkv9wHURPodUg2pJZoW2Xubx5M-9MUS-brkgt4SxtHfEKElgYUX9tCZ24ZxegZx8a7fZ')`
-                }}
-              />
-              
-              {/* Radar Sweep Effect */}
-              <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,rgba(174,233,255,0.25)_0deg,transparent_60deg,transparent_360deg)] animate-spin opacity-50" style={{ animationDuration: '10s' }} />
-
-              {/* Overlay UI elements on the map */}
-              <div className="absolute top-4 left-4 glass-panel px-3 py-2 rounded flex flex-col gap-1 border-[#aee9ff]/30">
-                <span className="text-[10px] font-bold tracking-widest text-[#bbc9cf] uppercase">
-                  ROUTE OPTIMIZATION
-                </span>
-                <span className="font-mono text-[#aee9ff] text-sm flex items-center gap-1.5 font-bold">
-                  <span className="material-symbols-outlined text-[16px]">route</span>
-                  ALPHA-7
-                </span>
-              </div>
-
-              <div className="absolute bottom-4 right-4 glass-panel px-3 py-2 rounded flex items-center gap-3 border-[#aee9ff]/30">
-                <span className="w-2 h-2 rounded-full bg-[#35d4ff] animate-ping" />
-                <span className="font-mono text-xs text-[#aee9ff]">LIVE RADAR FEED</span>
-              </div>
-            </div>
-          </div>
+          {/* Right Column: Spacer for Globe */}
+          <div className="lg:col-span-6 hidden lg:block" />
         </div>
 
         {/* Core Capabilities Section */}

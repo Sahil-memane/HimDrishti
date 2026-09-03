@@ -1,0 +1,10 @@
+node_modules
+dist
+dist-ssr
+temp_UI
+.git
+*.log
+*.local
+.vscode
+.idea
+.DS_Store

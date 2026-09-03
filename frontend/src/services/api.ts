@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = 'http://localhost:8010/api';
 const MODEL3_BASE_URL = 'http://localhost:8003';
 
 // Token helper
