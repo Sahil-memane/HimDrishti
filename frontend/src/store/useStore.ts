@@ -1,11 +1,5 @@
 import { create } from 'zustand';
-import {
-  type RouteResponse,
-  type AlertItem,
-  generateDynamicModelRoute,
-  buildModel3Recommendation,
-  type Model3Recommendation,
-} from '../services/api';
+import { type RouteResponse, type AlertItem, type Model3Recommendation } from '../services/api';
 
 interface UserState {
   userId: string | null;
@@ -19,11 +13,12 @@ interface UserState {
 interface VoyageState {
   activeVoyageId: string | null;
   voyageStatus: string;
-  routeData: RouteResponse;
-  llmRecommendation: Model3Recommendation | string;
+  routeData: RouteResponse | null;
+  llmRecommendation: Model3Recommendation | string | null;
   setActiveVoyage: (id: string, status?: string) => void;
   setRouteData: (data: RouteResponse) => void;
   setLlmRecommendation: (rec: Model3Recommendation | string) => void;
+  clearVoyage: () => void;
 }
 
 interface ForecastState {
@@ -34,24 +29,9 @@ interface ForecastState {
 interface AlertState {
   alerts: AlertItem[];
   setAlerts: (alerts: AlertItem[]) => void;
+  fetchAlerts: (voyageId?: string) => Promise<void>;
   acknowledgeAlert: (alertId: string) => void;
 }
-
-// Initial active voyage route calculation
-const initialInputs = {
-  vessel_id: 'b0000000-0000-0000-0000-000000000001',
-  start_lat: -60.0,
-  start_lon: 40.0,
-  dest_lat: -77.846,
-  dest_lon: 166.6682,
-  departure_time: new Date().toISOString(),
-  speed_knots: 12.5,
-  fuel_consumption_lph: 850,
-  risk_tolerance: 'balanced' as const,
-};
-
-const initialRoute = generateDynamicModelRoute(initialInputs);
-const initialRec = buildModel3Recommendation('balanced', initialRoute);
 
 export const useAuthStore = create<UserState>((set) => ({
   userId: localStorage.getItem('himdrishti_user_id'),
@@ -72,19 +52,31 @@ export const useAuthStore = create<UserState>((set) => ({
     localStorage.removeItem('himdrishti_email');
     localStorage.removeItem('himdrishti_role');
     localStorage.removeItem('himdrishti_token');
+    localStorage.removeItem('himdrishti_active_voyage_id');
     set({ userId: null, email: null, role: null, token: null });
+    useVoyageStore.getState().clearVoyage();
   },
 }));
 
+// No fake pre-seeded route: a fresh session has no active voyage until the
+// user actually plans one, or a previously planned voyage id is restored
+// from localStorage (so a page refresh doesn't lose an in-progress voyage).
 export const useVoyageStore = create<VoyageState>((set) => ({
-  activeVoyageId: 'b0000000-0000-0000-0000-000000000001',
-  voyageStatus: 'planned',
-  routeData: initialRoute,
-  llmRecommendation: initialRec,
+  activeVoyageId: localStorage.getItem('himdrishti_active_voyage_id'),
+  voyageStatus: 'idle',
+  routeData: null,
+  llmRecommendation: null,
 
-  setActiveVoyage: (id, status = 'planned') => set({ activeVoyageId: id, voyageStatus: status }),
+  setActiveVoyage: (id, status = 'planned') => {
+    localStorage.setItem('himdrishti_active_voyage_id', id);
+    set({ activeVoyageId: id, voyageStatus: status });
+  },
   setRouteData: (data) => set({ routeData: data }),
   setLlmRecommendation: (rec) => set({ llmRecommendation: rec }),
+  clearVoyage: () => {
+    localStorage.removeItem('himdrishti_active_voyage_id');
+    set({ activeVoyageId: null, voyageStatus: 'idle', routeData: null, llmRecommendation: null });
+  },
 }));
 
 export const useForecastStore = create<ForecastState>((set) => ({
@@ -93,31 +85,34 @@ export const useForecastStore = create<ForecastState>((set) => ({
 }));
 
 export const useAlertStore = create<AlertState>((set) => ({
-  alerts: [
-    {
-      alert_id: 'a1',
-      voyage_id: 'b0000000-0000-0000-0000-000000000001',
-      alert_type: 'iceberg_proximity',
-      severity: 'high',
-      message: 'Hull Integrity Breach Risk — SECTOR: BOW_PORT_32 | PRESSURE: 1.4x NORM',
-      triggered_at: new Date().toISOString(),
-      acknowledged: false,
-    },
-    {
-      alert_id: 'a2',
-      voyage_id: 'b0000000-0000-0000-0000-000000000001',
-      alert_type: 'high_ice_risk',
-      severity: 'medium',
-      message: 'Thermal Deviation Detected — NODE: ENG_COOL_04 | TEMP: +4.2°C',
-      triggered_at: new Date().toISOString(),
-      acknowledged: false,
-    },
-  ],
+  alerts: [],
 
   setAlerts: (alerts) => set({ alerts }),
 
-  acknowledgeAlert: (alertId) =>
+  fetchAlerts: async (voyageId?: string) => {
+    if (!voyageId) {
+      set({ alerts: [] });
+      return;
+    }
+    try {
+      const { api } = await import('../services/api');
+      const data = await api.getAlerts(voyageId);
+      set({ alerts: data });
+    } catch {
+      // Fallback empty if unauthenticated or network error
+      set({ alerts: [] });
+    }
+  },
+
+  acknowledgeAlert: async (alertId: string) => {
+    try {
+      const { api } = await import('../services/api');
+      await api.acknowledgeAlert(alertId);
+    } catch {
+      // Ignore network error and proceed to local state update
+    }
     set((state) => ({
-      alerts: state.alerts.map((a) => (a.alert_id === alertId ? { ...a, acknowledged: true } : a)),
-    })),
+      alerts: state.alerts.map((a) => (a.alert_id === alertId ? { ...a, acknowledged: true, status: 'ACKNOWLEDGED' } : a)),
+    }));
+  },
 }));

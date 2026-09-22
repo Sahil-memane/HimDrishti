@@ -76,7 +76,7 @@ const InteractiveGlobe = () => {
   const isDragging = useRef(false);
   const previousMouse = useRef({ x: 0, y: 0 });
 
-  useFrame((state, delta) => {
+  useFrame((_state, delta) => {
     if (!isDragging.current && innerGroupRef.current) {
       innerGroupRef.current.rotation.y += delta * 0.05; // Slow polar rotation
     }

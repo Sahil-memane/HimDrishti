@@ -52,7 +52,10 @@ export const LoginPage: React.FC = () => {
   };
 
   const handleSkipDemo = async () => {
+    setErrorMsg('');
+    setLoading(true);
     try {
+      // Genuine login with the documented demo account — no fake/bypass token.
       const loginRes = await api.login({ email: 'planner@himdrishti.dev', password: 'Password123!' });
       setUser({
         userId: loginRes.user_id,
@@ -60,17 +63,12 @@ export const LoginPage: React.FC = () => {
         role: loginRes.role,
         token: loginRes.access_token,
       });
-    } catch {
-      const demoToken = 'demo_token_planner';
-      localStorage.setItem('himdrishti_token', demoToken);
-      setUser({
-        userId: 'b0000000-0000-0000-0000-000000000001',
-        email: 'planner@himdrishti.dev',
-        role: 'planner',
-        token: demoToken,
-      });
+      navigate('/setup');
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Demo account unavailable — please register or log in.');
+    } finally {
+      setLoading(false);
     }
-    navigate('/setup');
   };
 
   return (

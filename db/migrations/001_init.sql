@@ -151,8 +151,9 @@ CREATE INDEX idx_cache_source_type_date ON external_data_cache(source_name, data
 -- =============================================================
 -- Seed data: test vessels for demo
 -- =============================================================
+-- password_hash is a real bcrypt hash of "Password123!" (the documented demo password)
 INSERT INTO users (user_id, full_name, email, password_hash, role) VALUES
-    ('a0000000-0000-0000-0000-000000000001', 'Demo Planner', 'planner@himdrishti.dev', '$2b$12$placeholder_hash_will_be_replaced', 'planner');
+    ('a0000000-0000-0000-0000-000000000001', 'Demo Planner', 'planner@himdrishti.dev', '$2b$12$nMQoQzUk99/WpAOaxhMJ8eE/lrAYpjDxHIqYstKtKmBIdQERuGXqy', 'planner');
 
 INSERT INTO vessels (vessel_id, name, imo_number, max_speed_knots, fuel_capacity_l, fuel_consumption_lph, owner_user_id) VALUES
     ('b0000000-0000-0000-0000-000000000001', 'MV Antarctic Explorer', 'IMO9876543', 15.0, 80000, 250, 'a0000000-0000-0000-0000-000000000001'),

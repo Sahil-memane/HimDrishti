@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { TileStyleType } from './mapConfig';
 
 interface MapControlsProps {
@@ -16,6 +16,10 @@ interface MapControlsProps {
   onToggleIcebergs?: (show: boolean) => void;
   showRiskZones?: boolean;
   onToggleRiskZones?: (show: boolean) => void;
+  showBathymetry?: boolean;
+  onToggleBathymetry?: (show: boolean) => void;
+  showSarQuicklook?: boolean;
+  onToggleSarQuicklook?: (show: boolean) => void;
 }
 
 export const MapControls: React.FC<MapControlsProps> = ({
@@ -33,10 +37,28 @@ export const MapControls: React.FC<MapControlsProps> = ({
   onToggleIcebergs,
   showRiskZones,
   onToggleRiskZones,
+  showBathymetry,
+  onToggleBathymetry,
+  showSarQuicklook,
+  onToggleSarQuicklook,
 }) => {
   const [layersOpen, setLayersOpen] = useState(false);
+  const layersRef = useRef<HTMLDivElement>(null);
 
-  const hasLayerControls = onToggleSeaIce || onToggleIcebergs || onToggleRiskZones;
+  // Close the Layers dropdown on an outside click so it doesn't linger open
+  // and visually compete with other floating map panels.
+  useEffect(() => {
+    if (!layersOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (layersRef.current && !layersRef.current.contains(e.target as Node)) {
+        setLayersOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [layersOpen]);
+
+  const hasLayerControls = onToggleSeaIce || onToggleIcebergs || onToggleRiskZones || onToggleBathymetry || onToggleSarQuicklook;
 
   return (
     <>
@@ -124,7 +146,7 @@ export const MapControls: React.FC<MapControlsProps> = ({
 
         {/* Integrated Layers Dropdown Menu */}
         {hasLayerControls && (
-          <div className="relative">
+          <div className="relative" ref={layersRef}>
             <button
               type="button"
               onClick={() => setLayersOpen(!layersOpen)}
@@ -186,6 +208,36 @@ export const MapControls: React.FC<MapControlsProps> = ({
                       checked={showRiskZones}
                       onChange={(e) => onToggleRiskZones(e.target.checked)}
                       className="rounded text-[#ffb4ab] focus:ring-0 cursor-pointer accent-[#ff3333]"
+                    />
+                  </label>
+                )}
+
+                {onToggleBathymetry && (
+                  <label className="flex items-center justify-between cursor-pointer text-xs font-semibold text-[#7dd3fc] hover:text-white transition-colors">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-[#0ea5e9]" />
+                      Bathymetry (Depth)
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={showBathymetry}
+                      onChange={(e) => onToggleBathymetry(e.target.checked)}
+                      className="rounded text-[#7dd3fc] focus:ring-0 cursor-pointer accent-[#0ea5e9]"
+                    />
+                  </label>
+                )}
+
+                {onToggleSarQuicklook && (
+                  <label className="flex items-center justify-between cursor-pointer text-xs font-semibold text-[#39ff14] hover:text-white transition-colors">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-[#39ff14]" />
+                      SAR Quicklook (Sentinel-1)
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={showSarQuicklook}
+                      onChange={(e) => onToggleSarQuicklook(e.target.checked)}
+                      className="rounded text-[#39ff14] focus:ring-0 cursor-pointer accent-[#39ff14]"
                     />
                   </label>
                 )}

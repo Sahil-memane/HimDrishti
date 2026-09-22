@@ -1,9 +1,20 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useVoyageStore } from '../store/useStore';
+import { latToDegMin, lonToDegMin, kmToNm } from '../lib/geo';
 
 export const AnalyticsPage: React.FC = () => {
-  const { routeData, llmRecommendation } = useVoyageStore();
+  const { routeData, llmRecommendation, activeVoyageId } = useVoyageStore();
   const [filterQuery, setFilterQuery] = useState('');
+  const [gatewayOnline, setGatewayOnline] = useState<boolean | null>(null);
+
+  // Real gateway liveness check — not a permanently-"ONLINE" placeholder.
+  useEffect(() => {
+    const apiBase = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000/api';
+    const healthUrl = apiBase.replace(/\/api\/?$/, '/health');
+    fetch(healthUrl)
+      .then((res) => setGatewayOnline(res.ok))
+      .catch(() => setGatewayOnline(false));
+  }, []);
 
   // Waypoints directly from store routeData
   const waypoints = routeData?.waypoints || [];
@@ -41,9 +52,10 @@ export const AnalyticsPage: React.FC = () => {
   };
 
   const totalDist = calculateDistance();
-  const totalFuel = routeData?.total_fuel_estimate_l ?? (waypoints[waypoints.length - 1]?.cumulative_fuel_l || 84500);
-  const overallRisk = routeData?.overall_risk_score ?? 0.24;
-  const etaText = routeData?.eta || waypoints[waypoints.length - 1]?.eta || '4d 12h';
+  const totalFuel = routeData?.total_fuel_estimate_l ?? waypoints[waypoints.length - 1]?.cumulative_fuel_l ?? 0;
+  const overallRisk = routeData?.overall_risk_score ?? 0;
+  const satelliteRisk = routeData?.satellite_risk;
+  const etaText = routeData?.eta_formatted || routeData?.eta || waypoints[waypoints.length - 1]?.eta || '—';
 
   // Safe string extraction for object or string llmRecommendation
   const reasoningText =
@@ -51,7 +63,7 @@ export const AnalyticsPage: React.FC = () => {
       ? llmRecommendation
       : (llmRecommendation as any)?.best_route?.route_summary ||
         routeData?.reasoning ||
-        'Model 3 A* Engine: Generated optimal maritime navigation path skirting landmasses & bypassing high-density sea ice.';
+        'No routing explanation available for this voyage yet.';
 
   const whyReasons: string[] =
     typeof llmRecommendation === 'object' && (llmRecommendation as any)?.why_this_route
@@ -64,10 +76,10 @@ export const AnalyticsPage: React.FC = () => {
       <div className="mb-8 flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
           <h2 className="font-['Manrope'] text-3xl font-bold text-white tracking-tight">
-            Alpha Centauri Transpolar
+            Voyage Route Analysis
           </h2>
           <p className="font-mono text-xs text-[#bbc9cf] mt-1">
-            Manifest ID: <span className="text-[#aee9ff] font-bold">TR-99-AXB</span> | Active Route Analysis
+            Voyage ID: <span className="text-[#aee9ff] font-bold">{activeVoyageId || '—'}</span> | Status: <span className="text-[#aee9ff] font-bold uppercase">{routeData?.status || 'unknown'}</span>
           </p>
         </div>
       </div>
@@ -99,13 +111,14 @@ export const AnalyticsPage: React.FC = () => {
       </div>
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 mb-8">
         {/* Card 1 */}
         <div className="glass-panel rounded-xl p-5 border border-[#aee9ff]/20 flex flex-col gap-2">
           <span className="text-xs font-bold text-[#bbc9cf] uppercase">Total Distance</span>
           <div className="font-mono text-2xl font-bold text-white">
             {totalDist.toLocaleString()} <span className="text-[#aee9ff] text-sm">KM</span>
           </div>
+          <div className="font-mono text-[10px] text-[#77d1ff]">{Math.round(kmToNm(totalDist)).toLocaleString()} NM</div>
         </div>
 
         {/* Card 2 */}
@@ -134,6 +147,15 @@ export const AnalyticsPage: React.FC = () => {
             </span>
           </div>
           <div className="font-mono text-3xl font-bold text-[#39ff14]">{overallRisk.toFixed(2)}</div>
+        </div>
+
+        {/* Card 5: Satellite Risk (real Sentinel-1 SAR hazard signal) */}
+        <div className="glass-panel rounded-xl p-5 border border-[#c084fc]/30 flex flex-col gap-2">
+          <span className="text-xs font-bold text-[#bbc9cf] uppercase">Satellite Risk</span>
+          <div className="font-mono text-2xl font-bold text-[#c084fc]">
+            {satelliteRisk != null ? satelliteRisk.toFixed(2) : 'N/A'}
+          </div>
+          <div className="font-mono text-[10px] text-[#c084fc]/70">SENTINEL-1 SAR CFAR SCAN</div>
         </div>
       </div>
 
@@ -169,6 +191,7 @@ export const AnalyticsPage: React.FC = () => {
                 <th className="py-3 px-6 text-center">ICE RISK</th>
                 <th className="py-3 px-6 text-center">ICEBERG RISK</th>
                 <th className="py-3 px-6 text-center">WEATHER RISK</th>
+                <th className="py-3 px-6 text-center">SATELLITE RISK</th>
                 <th className="py-3 px-6 text-center">LEG RISK SCORE</th>
               </tr>
             </thead>
@@ -178,39 +201,47 @@ export const AnalyticsPage: React.FC = () => {
                 const lat = getLat(w);
                 const lon = getLon(w);
                 const fuelVal = w.cumulative_fuel_l ?? (w as any).cumulative_fuel ?? 0;
-                const riskScore = w.segment_risk_score ?? (w as any).risk_score ?? 0.15;
-                const iceRisk = w.risk_factors?.ice_risk ?? 0.10;
-                const icebergRisk = w.risk_factors?.iceberg_risk ?? 0.08;
-                const weatherRisk = w.risk_factors?.weather_risk ?? 0.05;
+                const riskScore = w.segment_risk_score ?? (w as any).risk_score;
+                const iceRisk = w.risk_factors?.ice_risk;
+                const icebergRisk = w.risk_factors?.iceberg_risk;
+                const weatherRisk = w.risk_factors?.weather_risk;
+                const satRisk = w.risk_factors?.satellite_risk;
+                const fmt = (v: number | undefined | null) => (v != null ? Number(v).toFixed(2) : '—');
 
                 return (
                   <tr key={seq} className="hover:bg-[#aee9ff]/5 transition-colors">
                     <td className="py-3 px-6 text-[#bbc9cf]">{String(seq).padStart(3, '0')}</td>
                     <td className="py-3 px-6 font-bold text-white">
-                      {lat.toFixed(4)}, {lon.toFixed(4)}
+                      <div>{latToDegMin(lat)} {lonToDegMin(lon)}</div>
+                      <div className="text-[10px] text-[#77899e] font-normal">{lat.toFixed(4)}, {lon.toFixed(4)}</div>
                     </td>
                     <td className="py-3 px-6 text-[#bbc9cf]">{w.eta || 'N/A'}</td>
                     <td className="py-3 px-6 text-right font-bold">{Math.round(fuelVal).toLocaleString()}</td>
                     <td className="py-3 px-6 text-center text-[#aee9ff]">
-                      {Number(iceRisk).toFixed(2)}
+                      {fmt(iceRisk)}
                     </td>
                     <td className="py-3 px-6 text-center text-[#77d1ff]">
-                      {Number(icebergRisk).toFixed(2)}
+                      {fmt(icebergRisk)}
                     </td>
                     <td className="py-3 px-6 text-center text-[#b3c6db]">
-                      {Number(weatherRisk).toFixed(2)}
+                      {fmt(weatherRisk)}
+                    </td>
+                    <td className="py-3 px-6 text-center text-[#c084fc]">
+                      {fmt(satRisk)}
                     </td>
                     <td className="py-3 px-6 text-center">
                       <span
                         className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${
-                          riskScore > 0.6
+                          riskScore == null
+                            ? 'bg-[#3c494e]/20 border border-[#3c494e]/50 text-[#bbc9cf]'
+                            : riskScore > 0.6
                             ? 'bg-[#ff3333]/20 border border-[#ff3333]/50 text-[#ffb4ab]'
                             : riskScore > 0.3
                             ? 'bg-[#ffcc00]/20 border border-[#ffcc00]/50 text-[#ffcc00]'
                             : 'bg-[#39ff14]/10 border border-[#39ff14]/30 text-[#39ff14]'
                         }`}
                       >
-                        {Number(riskScore).toFixed(2)}
+                        {fmt(riskScore)}
                       </span>
                     </td>
                   </tr>
@@ -225,19 +256,15 @@ export const AnalyticsPage: React.FC = () => {
       <footer className="fixed bottom-0 left-0 w-full md:left-64 md:w-[calc(100%-16rem)] h-10 bg-[#030f1b] border-t border-[#3c494e]/30 z-50 flex items-center px-6 justify-between font-mono text-[10px] uppercase text-[#bbc9cf]">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#39ff14]" />
-            API Gateway: ONLINE
+            <span className={`w-2 h-2 rounded-full ${gatewayOnline === true ? 'bg-[#39ff14]' : gatewayOnline === false ? 'bg-[#ff3333]' : 'bg-[#3c494e]'}`} />
+            API Gateway: {gatewayOnline === true ? 'ONLINE' : gatewayOnline === false ? 'UNREACHABLE' : 'CHECKING...'}
           </div>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-[#35d4ff]" />
-            Model 3: READY
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#aee9ff]" />
-            IceNav DB: SYNCED
+            Route Status: {routeData?.status?.toUpperCase() || 'UNKNOWN'}
           </div>
         </div>
-        <div>VER: 4.2.1-STABLE</div>
+        <div>VOYAGE: {activeVoyageId ? activeVoyageId.slice(0, 8) : '—'}</div>
       </footer>
     </div>
   );

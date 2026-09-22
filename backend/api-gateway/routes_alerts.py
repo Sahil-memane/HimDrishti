@@ -18,14 +18,36 @@ from auth import get_current_user
 router = APIRouter()
 
 
+@router.get("/alerts", response_model=List[AlertOut])
+def get_user_active_alerts(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List active alerts for the current user's most recent active/planned voyage."""
+    latest_voyage = db.query(Voyage).filter(
+        Voyage.user_id == current_user.user_id
+    ).order_by(Voyage.created_at.desc()).first()
+
+    if not latest_voyage:
+        return []
+
+    alerts = db.query(Alert).filter(
+        Alert.voyage_id == latest_voyage.voyage_id,
+        Alert.status != "RESOLVED"
+    ).order_by(Alert.triggered_at.desc()).all()
+
+    return [AlertOut.model_validate(a) for a in alerts]
+
+
 @router.get("/alerts/{voyage_id}", response_model=List[AlertOut])
 def get_alerts(
     voyage_id: UUID,
     acknowledged: Optional[bool] = Query(None),
+    status: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List alerts for a voyage. Optionally filter by acknowledged status."""
+    """List alerts for a specific voyage. Optionally filter by acknowledged status or status."""
     voyage = db.query(Voyage).filter(Voyage.voyage_id == voyage_id).first()
     if not voyage:
         raise HTTPException(status_code=404, detail="Voyage not found")
@@ -36,6 +58,8 @@ def get_alerts(
     query = db.query(Alert).filter(Alert.voyage_id == voyage_id)
     if acknowledged is not None:
         query = query.filter(Alert.acknowledged == acknowledged)
+    if status is not None:
+        query = query.filter(Alert.status == status)
 
     alerts = query.order_by(Alert.triggered_at.desc()).all()
     return [AlertOut.model_validate(a) for a in alerts]
@@ -48,6 +72,8 @@ def acknowledge_alert(
     current_user: User = Depends(get_current_user),
 ):
     """Acknowledge a specific alert."""
+    from datetime import datetime, timezone
+
     alert = db.query(Alert).filter(Alert.alert_id == alert_id).first()
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
@@ -58,7 +84,9 @@ def acknowledge_alert(
         raise HTTPException(status_code=403, detail="Not the voyage owner")
 
     alert.acknowledged = True
+    alert.status = "ACKNOWLEDGED"
+    alert.acknowledged_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(alert)
 
-    return AlertAckResponse(alert_id=alert.alert_id, acknowledged=alert.acknowledged)
+    return AlertAckResponse(alert_id=alert.alert_id, acknowledged=alert.acknowledged, status=alert.status)

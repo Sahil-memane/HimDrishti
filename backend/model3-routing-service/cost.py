@@ -1,19 +1,28 @@
-def calculate_node_cost(sic, iceberg_dist_km, wave_height_m, wind_speed_knots, current_speed_knots, risk_tolerance):
-    # Hard constraints
-    if sic > 90 or iceberg_dist_km < 20 or wave_height_m > 5:
+def calculate_node_cost(sic, iceberg_dist_km, wave_height_m, wind_speed_knots, current_speed_knots, risk_tolerance, sat_hazard_dist_km=None):
+    # Hard constraints. SIC block threshold is 80%, not 90% — dense pack ice
+    # above 80% concentration is documented (project spec, real navigational
+    # guidance) as unnavigable for a standard (non-icebreaker) vessel.
+    if sic > 80 or iceberg_dist_km < 20 or wave_height_m > 5:
         return float('inf'), 0
-        
+
     # Iceberg risk banding
     if iceberg_dist_km <= 100:
         iceberg_risk = (100 - iceberg_dist_km) / 80.0
     else:
         iceberg_risk = 0.0
-        
+
+    # Satellite SAR-detected hazard proximity (real Sentinel-1 CFAR target, approximate
+    # position — see sar_detection.py caveats — so this is a risk contribution, not a hard block)
+    if sat_hazard_dist_km is not None and sat_hazard_dist_km <= 30.0:
+        sat_risk = max(0.0, 1.0 - sat_hazard_dist_km / 30.0)
+    else:
+        sat_risk = 0.0
+
     ice_risk = sic / 100.0
     wave_risk = wave_height_m / 5.0
     wind_risk = min(wind_speed_knots / 50.0, 1.0)
     current_risk = min(current_speed_knots / 5.0, 1.0)
-    
+
     # Base weights
     w_ice = 0.40
     w_iceberg = 0.30
@@ -21,28 +30,32 @@ def calculate_node_cost(sic, iceberg_dist_km, wave_height_m, wind_speed_knots, c
     w_wind = 0.05
     w_current = 0.05
     w_fuel = 0.05
-    
+    w_sat = 0.10
+
     # Apply tolerance scaling
     if risk_tolerance == "Low":
         w_ice *= 1.5
         w_iceberg *= 1.5
+        w_sat *= 1.5
         w_fuel *= 0.5
     elif risk_tolerance == "High":
         w_fuel *= 1.5
         w_ice *= 0.75
         w_iceberg *= 0.75
-        
+        w_sat *= 0.75
+
     # Normalize weights
-    total_w = w_ice + w_iceberg + w_wave + w_wind + w_current + w_fuel
-    
+    total_w = w_ice + w_iceberg + w_wave + w_wind + w_current + w_fuel + w_sat
+
     cost_score = (
         w_ice * ice_risk +
         w_iceberg * iceberg_risk +
         w_wave * wave_risk +
         w_wind * wind_risk +
-        w_current * current_risk
+        w_current * current_risk +
+        w_sat * sat_risk
     ) / total_w
-    
+
     return cost_score, w_fuel / total_w
 
 def edge_weight_func(u, v, d, G):

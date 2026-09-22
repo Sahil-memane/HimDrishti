@@ -13,6 +13,7 @@ Base = declarative_base()
 class SeaIceForecast(Base):
     __tablename__ = "sea_ice_forecasts"
     forecast_id       = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    voyage_id         = Column(UUID(as_uuid=True))
     forecast_date     = Column(Date, nullable=False)
     horizon_day       = Column(Integer, nullable=False)
     grid_cell         = Column(Text, nullable=False)
@@ -45,5 +46,6 @@ class RiskScore(Base):
     ice_risk       = Column(Float)
     iceberg_risk   = Column(Float)
     weather_risk   = Column(Float)
+    satellite_risk = Column(Float)
     combined_score = Column(Float)
 

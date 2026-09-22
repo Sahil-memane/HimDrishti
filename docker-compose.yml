@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:15-alpine
+    image: postgis/postgis:15-3.4
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD:-root}
@@ -10,6 +10,21 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./db/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@himdrishti.dev
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
 
   api-gateway:
     build: ./backend/api-gateway
@@ -22,7 +37,14 @@ services:
       - MODEL2_URL=http://model2:8002
       - MODEL3_URL=http://model3:8003
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      model1:
+        condition: service_healthy
+      model2:
+        condition: service_healthy
+      model3:
+        condition: service_healthy
 
   model1:
     build: ./backend/model1-seaice-service
@@ -33,7 +55,20 @@ services:
     volumes:
       - ./ml/artifacts:/app/artifacts
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    # model1's startup (TensorFlow import + real LSTM model load) takes several
+    # seconds — noticeably longer than api-gateway's. Without this, a voyage
+    # created moments after `docker compose up` can hit api-gateway -> model1
+    # while model1's port isn't accepting connections yet, permanently
+    # starving that voyage of sea-ice forecast data (observed in practice:
+    # a real ECONNREFUSED during pipeline startup).
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8001/health', timeout=3).raise_for_status()"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
 
   model2:
     build: ./backend/model2-iceberg-service
@@ -44,7 +79,14 @@ services:
     volumes:
       - ./ml/artifacts:/app/artifacts
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8002/health', timeout=3).raise_for_status()"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
 
   model3:
     build: ./backend/model3-routing-service
@@ -54,14 +96,19 @@ services:
       - DATABASE_URL=postgresql://postgres:${DB_PASSWORD:-root}@postgres:5432/himdrishti
       - MISTRAL_API_KEY=${MISTRAL_API_KEY}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8003/health', timeout=3).raise_for_status()"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
 
   frontend:
     build: ./frontend
     ports:
       - "3000:3000"
-    environment:
-      - VITE_MAPBOX_TOKEN=${MAPBOX_TOKEN}
     depends_on:
       - api-gateway
 

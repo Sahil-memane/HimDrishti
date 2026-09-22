@@ -77,7 +77,24 @@ class Voyage(Base):
     departure_time    = Column(DateTime(timezone=True), nullable=False)
     risk_tolerance    = Column(String(10), default="Medium")
     status            = Column(String(20), default="planned")
+    cancel_reason     = Column(Text)
     created_at        = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+
+    # Per-voyage cruising speed/fuel — what the user actually requested for
+    # THIS voyage, distinct from the vessel's own master-data max speed/rate.
+    speed_knots           = Column(Float)
+    fuel_consumption_lph  = Column(Float)
+    fuel_capacity_l       = Column(Float)
+
+    # Data-provenance — real values captured from Model 1/3 at pipeline time,
+    # otherwise lost once their one-off HTTP responses are discarded.
+    sic_model_used            = Column(String(10))   # 'lstm' or 'gbr'
+    satellite_status          = Column(String(30))    # REAL_SCENE_USED / NO_SCENE_FOUND / FETCH_ERROR
+    satellite_scene_id        = Column(Text)
+    satellite_scene_datetime  = Column(String(40))
+    satellite_n_detections    = Column(Integer)
+    satellite_bbox            = Column(Text)   # JSON-encoded [min_lon, min_lat, max_lon, max_lat]
+    satellite_thumbnail_href  = Column(Text)   # unsigned Azure blob href; re-signed on read
 
     # Relationships
     user       = relationship("User", back_populates="voyages")
@@ -123,6 +140,7 @@ class SeaIceForecast(Base):
     __tablename__ = "sea_ice_forecasts"
 
     forecast_id       = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    voyage_id         = Column(UUID(as_uuid=True))
     forecast_date     = Column(Date, nullable=False)
     horizon_day       = Column(Integer, nullable=False)
     grid_cell         = Column(Text, nullable=False)
@@ -165,6 +183,7 @@ class IcebergPrediction(Base):
     horizon_day         = Column(Integer, nullable=False)
     predicted_position  = Column(Text, nullable=False)
     confidence_radius_km = Column(Float)
+    created_at          = Column(DateTime(timezone=True), default=datetime.utcnow)
 
     __table_args__ = (
         UniqueConstraint("iceberg_id", "horizon_day", name="uq_iceberg_pred"),
@@ -185,6 +204,7 @@ class RiskScore(Base):
     ice_risk       = Column(Float)
     iceberg_risk   = Column(Float)
     weather_risk   = Column(Float)
+    satellite_risk = Column(Float)
     combined_score = Column(Float)
 
     # Relationships
@@ -204,21 +224,28 @@ class RiskScore(Base):
 class Alert(Base):
     __tablename__ = "alerts"
 
-    alert_id     = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    voyage_id    = Column(UUID(as_uuid=True), ForeignKey("voyages.voyage_id", ondelete="CASCADE"), nullable=False)
-    alert_type   = Column(String(30), nullable=False)
-    severity     = Column(String(10), nullable=False)
-    message      = Column(Text, nullable=False)
-    triggered_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    acknowledged = Column(Boolean, default=False)
+    alert_id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    voyage_id              = Column(UUID(as_uuid=True), ForeignKey("voyages.voyage_id", ondelete="CASCADE"), nullable=False)
+    alert_type             = Column(String(30), nullable=False)
+    severity               = Column(String(10), nullable=False)
+    title                  = Column(String(255))
+    message                = Column(Text, nullable=False)
+    status                 = Column(String(20), default="ACTIVE")
+    latitude               = Column(Float)
+    longitude              = Column(Float)
+    route_waypoint         = Column(Integer)
+    route_segment          = Column(Text)
+    risk_score             = Column(Float)
+    source_model           = Column(String(30))
+    forecast_time          = Column(DateTime(timezone=True))
+    distance_from_route_km = Column(Float)
+    triggered_at           = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    acknowledged           = Column(Boolean, default=False)
+    acknowledged_at        = Column(DateTime(timezone=True))
+    resolved_at            = Column(DateTime(timezone=True))
 
     # Relationships
     voyage = relationship("Voyage", back_populates="alerts")
-
-    __table_args__ = (
-        CheckConstraint("alert_type IN ('iceberg_proximity', 'storm', 'high_ice_risk', 'reroute')", name="ck_alert_type"),
-        CheckConstraint("severity IN ('low', 'medium', 'high')", name="ck_alert_severity"),
-    )
 
 
 # -----------------------------------------------------------------

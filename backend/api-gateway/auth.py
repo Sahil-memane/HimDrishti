@@ -61,14 +61,6 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    # Support for demo bypass tokens
-    if token and ("demo" in token.lower() or "mock" in token.lower()):
-        demo_user = db.query(User).filter(User.email == "planner@himdrishti.dev").first()
-        if not demo_user:
-            demo_user = db.query(User).first()
-        if demo_user:
-            return demo_user
-
     try:
         payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
         user_id: str = payload.get("sub")
@@ -76,18 +68,9 @@ def get_current_user(
         if user_id is None or token_type != "access":
             raise credentials_exception
     except JWTError:
-        # Fallback to demo user if token verification fails
-        demo_user = db.query(User).filter(User.email == "planner@himdrishti.dev").first()
-        if not demo_user:
-            demo_user = db.query(User).first()
-        if demo_user:
-            return demo_user
         raise credentials_exception
 
     user = db.query(User).filter(User.user_id == user_id).first()
     if user is None:
-        demo_user = db.query(User).first()
-        if demo_user:
-            return demo_user
         raise credentials_exception
     return user

@@ -1,0 +1,41 @@
+{
+  "source": "NOAA PolarWatch ERDDAP dataset noaacwVIIRSn21iceconcSP06Daily (VIIRS N21 Southern Hemisphere sea-ice concentration, no-auth public access)",
+  "weather_source": "Open-Meteo Archive API (https://archive-api.open-meteo.com), real historical ERA5-derived weather",
+  "regions": [
+    "weddell_sea",
+    "bellingshausen_sea"
+  ],
+  "training_window_days": 45,
+  "n_samples": 370986,
+  "n_train": 296788,
+  "n_val": 74198,
+  "overall_val_mae": 0.06646152627176317,
+  "mae_by_horizon": {
+    "1": 0.03984207267852623,
+    "2": 0.0522510165603272,
+    "3": 0.06468851247852545,
+    "4": 0.07197894077233924,
+    "5": 0.07583663802638325,
+    "6": 0.07908349358317714,
+    "7": 0.08146503725709948
+  },
+  "trained_at": "2026-09-20T18:06:16.922785+00:00",
+  "feature_columns": [
+    "sic_lag_6",
+    "sic_lag_5",
+    "sic_lag_4",
+    "sic_lag_3",
+    "sic_lag_2",
+    "sic_lag_1",
+    "sic_lag_0",
+    "air_temp_c",
+    "wind_speed_kmh",
+    "pressure_hpa",
+    "lat",
+    "lon",
+    "doy_sin",
+    "doy_cos",
+    "horizon_day"
+  ],
+  "model_type": "sklearn.ensemble.GradientBoostingRegressor"
+}

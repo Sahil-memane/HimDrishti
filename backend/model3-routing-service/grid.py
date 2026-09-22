@@ -50,3 +50,24 @@ def get_closest_node(G, lon, lat):
             min_dist = dist
             closest_node = node
     return closest_node
+
+
+def get_closest_navigable_node(G, lon, lat, max_dist_km=450.0):
+    """
+    Find the closest unblocked (navigable) sea node in G.
+    If the requested position is within max_dist_km of navigable waters,
+    returns (closest_node, distance_km). Otherwise returns (None, min_dist_km).
+    """
+    closest_node = None
+    min_dist = float('inf')
+    for node, data in G.nodes(data=True):
+        if data.get('blocked'):
+            continue
+        dist = haversine(lon, lat, data['lon'], data['lat'])
+        if dist < min_dist:
+            min_dist = dist
+            closest_node = node
+
+    if closest_node and min_dist <= max_dist_km:
+        return closest_node, min_dist
+    return None, min_dist

@@ -14,11 +14,16 @@ import {
   updateRouteGeoJSON,
   updateRiskZonesGeoJSON,
   updateIcebergsGeoJSON,
+  updateSeaIceGeoJSON,
   updateVesselGeoJSON,
+  updateAlertsGeoJSON,
+  updateSarQuicklookImage,
   setLayerGroupVisibility,
 } from './MapLayerManager';
 import { MapControls } from './MapControls';
 import { MapLegend } from './MapLegend';
+import { api } from '../../services/api';
+import { latToDegMin, lonToDegMin } from '../../lib/geo';
 
 // Resolve MapLibre constructor safely across bundlers
 const MapLibre = (maplibregl as any).Map ? maplibregl : (maplibregl as any);
@@ -34,39 +39,67 @@ export interface MapWaypoint {
     ice_risk: number;
     iceberg_risk: number;
     weather_risk: number;
+    satellite_risk?: number;
   };
 }
 
 export interface InteractivePolarMapProps {
   waypoints?: MapWaypoint[];
+  alerts?: any[];
   vesselLat?: number;
   vesselLon?: number;
   vesselHeading?: number;
   vesselSpeed?: number;
   showSeaIce?: boolean;
   showIcebergs?: boolean;
+  /** Show real iceberg last-known-position + drift-vector detail layers. Off by default — this is forecast-analysis detail, not needed on the route-decision (Dashboard) map. */
+  showIcebergDrift?: boolean;
   showRiskZones?: boolean;
+  showBathymetry?: boolean;
+  showSarQuicklook?: boolean;
   onToggleSeaIce?: (show: boolean) => void;
   onToggleIcebergs?: (show: boolean) => void;
   onToggleRiskZones?: (show: boolean) => void;
+  onToggleBathymetry?: (show: boolean) => void;
+  onToggleSarQuicklook?: (show: boolean) => void;
+  /** Real Sentinel-1 scene bbox + freshly-signed quicklook image URL, from the route's data_provenance. */
+  sarBbox?: [number, number, number, number] | null;
+  sarImageUrl?: string | null;
   activeRiskProfile?: string;
+  /** Forecast horizon day (1-7) used to fetch the sea-ice/iceberg forecast layers. Defaults to day 1 (today). */
+  horizonDay?: number;
+  /** Active voyage — scopes the sea-ice forecast fetch to this voyage's own Model 1 run instead of whichever voyage most recently overwrote the shared table. */
+  voyageId?: string | null;
   onWaypointSelect?: (wp: MapWaypoint) => void;
+  /** Called with the real fetched forecast GeoJSON whenever it refreshes, so parent pages can show real summary stats instead of fabricated ones. */
+  onForecastLoaded?: (seaIce: any, icebergs: any) => void;
   className?: string;
 }
 
 export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
   waypoints = [],
-  vesselLat = -65.2,
-  vesselLon = 70.4,
+  alerts = [],
+  vesselLat = -60.0,
+  vesselLon = 40.0,
   vesselHeading = 45,
-  vesselSpeed = 14.2,
-  showSeaIce = true,
+  vesselSpeed = 12.5,
+  showSeaIce = false,
   showIcebergs = true,
+  showIcebergDrift = false,
   showRiskZones = true,
+  showBathymetry = false,
+  showSarQuicklook = false,
   onToggleSeaIce,
   onToggleIcebergs,
   onToggleRiskZones,
+  onToggleBathymetry,
+  onToggleSarQuicklook,
+  sarBbox = null,
+  sarImageUrl = null,
+  horizonDay = 1,
+  voyageId = null,
   onWaypointSelect,
+  onForecastLoaded,
   className = 'h-full w-full min-h-[450px]',
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -78,13 +111,7 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
   const [mapError, setMapError] = useState<boolean>(false);
 
-  // Fallback demo waypoints if none provided
-  const activeWaypoints: MapWaypoint[] = waypoints.length > 0 ? waypoints : [
-    { sequence_no: 1, lat: -60.0, lon: 40.0, eta: '2024-11-18T08:00', cumulative_fuel_l: 0, segment_risk_score: 0.12, risk_factors: { ice_risk: 0.05, iceberg_risk: 0.04, weather_risk: 0.03 } },
-    { sequence_no: 2, lat: -65.2, lon: 70.4, eta: '2024-11-18T18:30', cumulative_fuel_l: 14200, segment_risk_score: 0.18, risk_factors: { ice_risk: 0.08, iceberg_risk: 0.05, weather_risk: 0.05 } },
-    { sequence_no: 3, lat: -71.8, lon: 110.1, eta: '2024-11-19T10:15', cumulative_fuel_l: 38400, segment_risk_score: 0.45, risk_factors: { ice_risk: 0.22, iceberg_risk: 0.15, weather_risk: 0.08 } },
-    { sequence_no: 4, lat: -77.846, lon: 166.6682, eta: '2024-11-20T14:00', cumulative_fuel_l: 84500, segment_risk_score: 0.24, risk_factors: { ice_risk: 0.10, iceberg_risk: 0.07, weather_risk: 0.05 } },
-  ];
+  const activeWaypoints: MapWaypoint[] = waypoints;
 
   // Initialize MapLibre GL instance
   useEffect(() => {
@@ -163,7 +190,10 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
               <span style="font-family: monospace; font-size: 10px; color: #839493;">${isStart ? 'ORIGIN' : isEnd ? 'DEST' : 'WAYPOINT'}</span>
             </div>
             <div style="font-family: monospace; font-size: 11px; margin-bottom: 4px;">
-              LAT/LON: <strong style="color: #fff;">${coordinates[1].toFixed(4)}, ${coordinates[0].toFixed(4)}</strong>
+              POSITION: <strong style="color: #fff;">${latToDegMin(coordinates[1])} ${lonToDegMin(coordinates[0])}</strong>
+            </div>
+            <div style="font-family: monospace; font-size: 10px; margin-bottom: 4px; color: #839493;">
+              ${coordinates[1].toFixed(4)}, ${coordinates[0].toFixed(4)}
             </div>
             ${props.eta ? `<div style="font-size: 11px; margin-bottom: 4px; color: #b9cac9;">ETA: <strong style="color: #fff;">${props.eta}</strong></div>` : ''}
             ${props.cumulative_fuel_l !== undefined ? `<div style="font-size: 11px; margin-bottom: 8px; color: #b9cac9;">Fuel Burn: <strong style="color: #35d4ff;">${Number(props.cumulative_fuel_l).toLocaleString()} L</strong></div>` : ''}
@@ -176,13 +206,62 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
           .addTo(map);
       });
 
+      // Iceberg Cluster & Point Click Handler
+      const handleIcebergClick = (e: any) => {
+        if (!e.features || e.features.length === 0) return;
+        const feature = e.features[0];
+        const props = feature.properties || {};
+        const coordinates = (feature.geometry as any).coordinates.slice();
+
+        if (popupRef.current) popupRef.current.remove();
+
+        const count = props.point_count;
+        const title = count ? `🧊 ICEBERG DRIFT CLUSTER (${count} DETECTED)` : `🧊 TRACKED ICEBERG ${props.iceberg_id || 'UNKNOWN'}`;
+        const radiusText = props.confidence_radius_km != null ? `±${Number(props.confidence_radius_km).toFixed(1)} km` : 'N/A';
+        const dayText = props.horizon_day != null ? `Day ${props.horizon_day}` : '';
+        const popupHtml = `
+          <div style="
+            background: rgba(7, 20, 32, 0.96);
+            backdrop-filter: blur(12px);
+            border: 1px solid #ffaa00;
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #d7e4f5;
+            font-family: 'Inter', sans-serif;
+            min-width: 220px;
+            box-shadow: 0 8px 32px rgba(255, 170, 0, 0.3);
+          ">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 170, 0, 0.3); padding-bottom: 6px; margin-bottom: 8px;">
+              <span style="font-weight: 800; font-size: 12px; color: #ffaa00;">${title}</span>
+            </div>
+            <div style="font-size: 11px; margin-bottom: 4px; color: #e2e8f0;">
+              SOURCE: <strong style="color: #00daf3;">Model 2 Physics-Informed Drift Forecast</strong>${dayText ? ` (${dayText})` : ''}
+            </div>
+            <div style="font-size: 11px; margin-bottom: 4px; color: #e2e8f0;">
+              POSITION CONFIDENCE RADIUS: <strong style="color: #ffc107;">${radiusText}</strong>
+            </div>
+            <div style="font-size: 11px; color: #94a3b8;">
+              Proximity: Safe buffer distance maintained by Model 3 A* router.
+            </div>
+          </div>
+        `;
+
+        popupRef.current = new MapLibre.Popup({ closeButton: true, className: 'himdrishti-popup' })
+          .setLngLat(coordinates)
+          .setHTML(popupHtml)
+          .addTo(map);
+      };
+
+      map.on('click', MAP_LAYERS.ICEBERG_POINTS, handleIcebergClick);
+      map.on('click', MAP_LAYERS.ICEBERG_CLUSTERS, handleIcebergClick);
+
       // Cursor pointer hover effects
-      map.on('mouseenter', MAP_LAYERS.WAYPOINT_POINTS, () => {
-        map.getCanvas().style.cursor = 'pointer';
-      });
-      map.on('mouseleave', MAP_LAYERS.WAYPOINT_POINTS, () => {
-        map.getCanvas().style.cursor = '';
-      });
+      map.on('mouseenter', MAP_LAYERS.WAYPOINT_POINTS, () => { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('mouseleave', MAP_LAYERS.WAYPOINT_POINTS, () => { map.getCanvas().style.cursor = ''; });
+      map.on('mouseenter', MAP_LAYERS.ICEBERG_POINTS, () => { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('mouseleave', MAP_LAYERS.ICEBERG_POINTS, () => { map.getCanvas().style.cursor = ''; });
+      map.on('mouseenter', MAP_LAYERS.ICEBERG_CLUSTERS, () => { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('mouseleave', MAP_LAYERS.ICEBERG_CLUSTERS, () => { map.getCanvas().style.cursor = ''; });
 
       const resizeObserver = new ResizeObserver(() => {
         map.resize();
@@ -215,6 +294,8 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
       updateRiskZonesGeoJSON(map, showRiskZones, activeWaypoints);
       updateIcebergsGeoJSON(map, showIcebergs, activeWaypoints);
       updateVesselGeoJSON(map, vesselLat, vesselLon, vesselHeading, vesselSpeed);
+      setLayerGroupVisibility(map, [MAP_LAYERS.BATHYMETRY], showBathymetry);
+      updateSarQuicklookImage(map, showSarQuicklook, sarBbox, sarImageUrl);
     };
 
     map.once('style.load', handleStyleLoad);
@@ -238,27 +319,62 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
     const map = mapRef.current;
 
     const startWp = activeWaypoints[0];
-    const currentVesselLat = vesselLat ?? startWp?.lat ?? -65.2;
-    const currentVesselLon = vesselLon ?? startWp?.lon ?? 70.4;
+    const currentVesselLat = vesselLat ?? startWp?.lat ?? -60.0;
+    const currentVesselLon = vesselLon ?? startWp?.lon ?? 40.0;
 
     updateRouteGeoJSON(map, activeWaypoints);
     updateRiskZonesGeoJSON(map, showRiskZones, activeWaypoints);
-    updateIcebergsGeoJSON(map, showIcebergs, activeWaypoints);
     updateVesselGeoJSON(map, currentVesselLat, currentVesselLon, vesselHeading, vesselSpeed);
+    updateAlertsGeoJSON(map, alerts);
 
+    // Compute bounding box for model forecast queries
+    let bbox = '-180,-90,180,90';
+    if (activeWaypoints.length > 0) {
+      const lats = activeWaypoints.map((w) => w.lat);
+      const lons = activeWaypoints.map((w) => w.lon);
+      const minLat = Math.min(...lats) - 2.0;
+      const maxLat = Math.max(...lats) + 2.0;
+      const minLon = Math.min(...lons) - 2.0;
+      const maxLon = Math.max(...lons) + 2.0;
+      bbox = `${minLon.toFixed(2)},${minLat.toFixed(2)},${maxLon.toFixed(2)},${maxLat.toFixed(2)}`;
+    }
+
+    // Fetch the real Model 1 sea-ice forecast & Model 2 iceberg forecast for
+    // the currently selected horizon day, so the 7-day slider actually
+    // changes what's shown instead of always displaying day 1.
+    Promise.all([
+      api.getSeaIceForecast(bbox, horizonDay, voyageId).catch(() => null),
+      api.getIcebergForecast(bbox, horizonDay).catch(() => null),
+    ]).then(([seaIceGeoJSON, icebergGeoJSON]) => {
+      if (mapRef.current) {
+        updateSeaIceGeoJSON(mapRef.current, showSeaIce, seaIceGeoJSON);
+        updateRiskZonesGeoJSON(mapRef.current, showRiskZones, activeWaypoints, seaIceGeoJSON);
+        updateIcebergsGeoJSON(mapRef.current, showIcebergs, activeWaypoints, icebergGeoJSON);
+      }
+      onForecastLoaded?.(seaIceGeoJSON, icebergGeoJSON);
+    });
+
+    setLayerGroupVisibility(map, [MAP_LAYERS.SEA_ICE], showSeaIce);
     setLayerGroupVisibility(map, [MAP_LAYERS.RISK_ZONES_FILL, MAP_LAYERS.RISK_ZONES_OUTLINE], showRiskZones);
     setLayerGroupVisibility(
       map,
       [MAP_LAYERS.ICEBERG_CLUSTERS, MAP_LAYERS.ICEBERG_CLUSTER_COUNT, MAP_LAYERS.ICEBERG_POINTS],
       showIcebergs
     );
+    setLayerGroupVisibility(
+      map,
+      [MAP_LAYERS.ICEBERG_ANCHOR_POINTS, MAP_LAYERS.ICEBERG_DRIFT_LINES, MAP_LAYERS.ICEBERG_DRIFT_ARROWS],
+      showIcebergs && showIcebergDrift
+    );
+    setLayerGroupVisibility(map, [MAP_LAYERS.BATHYMETRY], showBathymetry);
+    updateSarQuicklookImage(map, showSarQuicklook, sarBbox, sarImageUrl);
 
     if (activeWaypoints.length > 0) {
       const bounds = new MapLibre.LngLatBounds();
       activeWaypoints.forEach((wp) => bounds.extend([wp.lon, wp.lat]));
       map.fitBounds(bounds, { padding: 80, maxZoom: 8, duration: 1000 });
     }
-  }, [waypoints, showSeaIce, showIcebergs, showRiskZones, vesselLat, vesselLon, vesselHeading, vesselSpeed, mapLoaded, mapError]);
+  }, [waypoints, showSeaIce, showIcebergs, showIcebergDrift, showRiskZones, showBathymetry, showSarQuicklook, sarBbox, sarImageUrl, vesselLat, vesselLon, vesselHeading, vesselSpeed, horizonDay, voyageId, mapLoaded, mapError]);
 
   const handleResetAntarctica = () => {
     if (!mapRef.current || mapError) return;
@@ -339,34 +455,14 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
             <line x1="0%" y1="50%" x2="100%" y2="50%" stroke="#00daf3" strokeWidth="0.8" strokeDasharray="4,4" />
           </svg>
 
-          {/* Fallback Tactical Route Projection */}
+          {/* Fallback Tactical Route Projection — real waypoints only. Sea-ice,
+              iceberg and risk-zone overlays need the WebGL map view since this
+              simplified chart has no real geographic projection to place them on. */}
           <svg className="absolute inset-0 w-full h-full" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice">
-            {/* Risk Polygon */}
-            {showRiskZones && (
-              <polygon
-                points="420,240 580,210 640,330 480,360"
-                fill="#ff3333"
-                fillOpacity="0.2"
-                stroke="#ff3333"
-                strokeWidth="1.5"
-                strokeDasharray="4,4"
-              />
-            )}
-
-            {/* Iceberg Anomaly Markers */}
-            {showIcebergs && (
-              <>
-                <g transform="translate(490, 260)">
-                  <circle r="8" fill="#ffaa00" opacity="0.8" />
-                  <circle r="14" stroke="#ffaa00" strokeWidth="1.5" fill="none" opacity="0.5" />
-                  <text x="12" y="4" fill="#ffaa00" fontSize="10" fontFamily="monospace" fontWeight="bold">B-15A ICEBERG</text>
-                </g>
-                <g transform="translate(560, 290)">
-                  <circle r="8" fill="#ff3333" opacity="0.8" />
-                  <circle r="14" stroke="#ff3333" strokeWidth="1.5" fill="none" opacity="0.5" />
-                  <text x="12" y="4" fill="#ff3333" fontSize="10" fontFamily="monospace" fontWeight="bold">A-68A FRAGMENT</text>
-                </g>
-              </>
+            {(showRiskZones || showIcebergs) && (
+              <text x="500" y="40" textAnchor="middle" fill="#bbc9cf" fontSize="11" fontFamily="monospace">
+                Hazard overlays unavailable in fallback chart mode — enable WebGL for live sea-ice/iceberg layers
+              </text>
             )}
 
             {/* Tactical Route Line */}
@@ -440,13 +536,20 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
         onToggleIcebergs={onToggleIcebergs}
         showRiskZones={showRiskZones}
         onToggleRiskZones={onToggleRiskZones}
+        showBathymetry={showBathymetry}
+        onToggleBathymetry={onToggleBathymetry}
+        showSarQuicklook={showSarQuicklook}
+        onToggleSarQuicklook={sarImageUrl ? onToggleSarQuicklook : undefined}
       />
 
       {/* Map Legend Panel */}
       <MapLegend
         showSeaIce={showSeaIce}
         showIcebergs={showIcebergs}
+        showIcebergDrift={showIcebergDrift}
+        showBathymetry={showBathymetry}
         showRiskZones={showRiskZones}
+        showSarQuicklook={showSarQuicklook && !!sarImageUrl}
       />
     </div>
   );

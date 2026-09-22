@@ -209,6 +209,11 @@ def get_model_outputs(db, voyage_id):
                 if row.weather_risk is not None
                 else None
             ),
+            "satellite_risk": (
+                float(row.satellite_risk)
+                if row.satellite_risk is not None
+                else None
+            ),
             "combined_score": (
                 float(row.combined_score)
                 if row.combined_score is not None
@@ -467,39 +472,52 @@ def generate_route_recommendation(voyage_id):
         # ----------------------------------------------------
         # 4. Send everything to Mistral (with fallback)
         # ----------------------------------------------------
+        is_fallback = False
         try:
             recommendation = call_mistral(prompt)
         except Exception as err:
-            print(f"[Model 3 LLM] Mistral API call fallback ({err}). Generating structured recommendation.")
+            print(f"[Model 3 LLM] Mistral API call fallback ({err}). Generating structured recommendation from real route data.")
+            is_fallback = True
+
+            risks = data["model3_risk_scores"]
+            n = len(risks) or 1
+            avg_ice = sum((r["ice_risk"] or 0.0) for r in risks) / n
+            avg_iceberg = sum((r["iceberg_risk"] or 0.0) for r in risks) / n
+            avg_weather = sum((r["weather_risk"] or 0.0) for r in risks) / n
+            avg_combined = sum((r["combined_score"] or 0.0) for r in risks) / n
+
+            def _band(v):
+                return "Low" if v <= 0.3 else "Moderate" if v <= 0.6 else "High"
+
             recommendation = {
                 "best_route": {
-                    "route_summary": "Optimal A* Navigation Path avoiding dense sea ice and iceberg drift corridors",
+                    "route_summary": "A* Navigation Path (real Model 1/2/3 route data; Mistral explainability unavailable this run)",
                     "waypoints": data["model3_waypoints"]
                 },
                 "why_this_route": [
-                    "1. Bypassed 90%+ Sea Ice Concentration (SIC) ridges detected by Model 1 in Sector 7G.",
-                    "2. Maintained 20km+ safety clearance from Model 2 predicted iceberg drift trajectories.",
-                    "3. Balanced fuel consumption rate with structural vessel hull safety."
+                    f"1. Real computed route risk profile: ice={avg_ice:.2f}, iceberg={avg_iceberg:.2f}, weather={avg_weather:.2f}, overall={avg_combined:.2f}.",
+                    f"2. {len(data['model3_waypoints'])} waypoints computed by the real A* engine over the real Model 1/2 hazard grid.",
+                    "3. This explanation is templated from real route data, not an AI-generated narrative — Mistral could not be reached for this request."
                 ],
                 "risk": {
-                    "overall_risk": "Low",
-                    "ice_risk": "Low (0.12)",
-                    "iceberg_risk": "Low (0.08)",
-                    "weather_risk": "Low (0.05)",
-                    "explanation": "Route passes through low-resistance ice leads with minimal hazard exposure."
+                    "overall_risk": f"{_band(avg_combined)} ({avg_combined:.2f})",
+                    "ice_risk": f"{_band(avg_ice)} ({avg_ice:.2f})",
+                    "iceberg_risk": f"{_band(avg_iceberg)} ({avg_iceberg:.2f})",
+                    "weather_risk": f"{_band(avg_weather)} ({avg_weather:.2f})",
+                    "explanation": "Computed directly from real per-segment risk_scores for this voyage (not an LLM narrative)."
                 },
                 "fuel": {
-                    "estimated_fuel_l": data["model3_waypoints"][-1]["cumulative_fuel_l"] if data["model3_waypoints"] else 45200,
-                    "explanation": "Fuel consumption optimized by avoiding thick multi-year ice pack."
+                    "estimated_fuel_l": data["model3_waypoints"][-1]["cumulative_fuel_l"] if data["model3_waypoints"] else None,
+                    "explanation": "Real cumulative fuel from the last computed waypoint."
                 },
                 "eta": {
-                    "destination_eta": data["model3_waypoints"][-1]["eta"] if data["model3_waypoints"] else "4d 12h",
-                    "explanation": "Sailing at cruising speed along low-resistance leads."
+                    "destination_eta": data["model3_waypoints"][-1]["eta"] if data["model3_waypoints"] else None,
+                    "explanation": "Real ETA from the last computed waypoint."
                 },
                 "model_summary": {
-                    "model1": "Model 1 SIC Forecast: Identified navigable low-concentration sea-ice leads.",
-                    "model2": "Model 2 Iceberg Trajectory: Projected GRU drift vectors to clear iceberg clusters.",
-                    "model3": "Model 3 A* Engine: Computed optimal least-cost path & explainability rationale."
+                    "model1": f"Model 1 SIC Forecast: {len(data['model1_sea_ice'])} real forecast cells considered.",
+                    "model2": f"Model 2 Iceberg Trajectory: {len(data['model2_iceberg'])} real predicted positions considered.",
+                    "model3": "Model 3 A* Engine: real least-cost path computed; this text block is templated, not Mistral-generated."
                 }
             }
 
@@ -511,7 +529,8 @@ def generate_route_recommendation(voyage_id):
             "voyage_id": voyage_id,
             "llm": {
                 "provider": "Mistral / Model 3 Engine",
-                "model": MISTRAL_MODEL
+                "model": MISTRAL_MODEL,
+                "is_fallback": is_fallback
             },
             "recommendation": recommendation,
             "source_data": {

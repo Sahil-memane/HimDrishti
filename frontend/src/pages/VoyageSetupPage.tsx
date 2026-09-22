@@ -1,17 +1,24 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, generateDynamicModelRoute, buildModel3Recommendation, type VoyageCreatePayload } from '../services/api';
-import { useVoyageStore } from '../store/useStore';
+import { api, buildModel3Recommendation, type VoyageCreatePayload } from '../services/api';
+import { useVoyageStore, useAlertStore } from '../store/useStore';
 
 export const VoyageSetupPage: React.FC = () => {
   const navigate = useNavigate();
   const { setActiveVoyage, setRouteData, setLlmRecommendation } = useVoyageStore();
 
   const [vesselId, setVesselId] = useState('b0000000-0000-0000-0000-000000000001');
-  const [startLatStr, setStartLatStr] = useState('-60.0');
-  const [startLonStr, setStartLonStr] = useState('40.0');
-  const [destLatStr, setDestLatStr] = useState('-77.846');
-  const [destLonStr, setDestLonStr] = useState('166.6682');
+  // A realistic, moderate-distance default (~860km) that computes within a
+  // normal timeframe. The previous default (-60,40) -> (-77.846,166.6682)
+  // spans ~127° of longitude — a route length Model 3's real A* search over
+  // that whole bounding box cannot finish inside any reasonable timeout, so
+  // it always failed and (due to a separate bug, also now fixed) reported a
+  // misleading "inland/unnavigable" error that had nothing to do with the
+  // real cause.
+  const [startLatStr, setStartLatStr] = useState('-64.5');
+  const [startLonStr, setStartLonStr] = useState('60.0');
+  const [destLatStr, setDestLatStr] = useState('-66.0');
+  const [destLonStr, setDestLonStr] = useState('68.0');
   const [speedKnots, setSpeedKnots] = useState(12.5);
   const [fuelRate, setFuelRate] = useState(850);
   const [fuelCapacity, setFuelCapacity] = useState(500000);
@@ -53,22 +60,35 @@ export const VoyageSetupPage: React.FC = () => {
       };
 
       // 1. Create Voyage via API Gateway
+      setStatusMsg('Generating route...');
       const res = await api.createVoyage(payload);
-      const voyageId = res.voyage_id || 'v_' + Date.now();
+      const voyageId = res.voyage_id;
+      setActiveVoyage(voyageId, 'processing');
+
+      // 2. Fetch actual Model 3 route and recommendation from backend models
+      const route = await api.getRoute(voyageId);
+      if (!route || !route.waypoints || route.waypoints.length === 0) {
+        throw new Error('No valid route returned');
+      }
+
+      const recData = await api.getRouteRecommendation(voyageId).catch(() => null);
+      const rec = recData?.recommendation || buildModel3Recommendation(riskProfile, route);
+
       setActiveVoyage(voyageId, 'planned');
-
-      // 2. Generate unified maritime ocean corridor route & structured Model 3 recommendation
-      const route = generateDynamicModelRoute(payload);
-      const rec = buildModel3Recommendation(riskProfile, route);
-
       setRouteData(route);
       setLlmRecommendation(rec);
+      useAlertStore.getState().fetchAlerts(voyageId);
 
       setLoading(false);
       navigate('/dashboard');
     } catch (err: any) {
       setLoading(false);
-      setErrorMsg(err.message || 'Failed to submit voyage');
+      const msg = err.message || '';
+      if (msg.includes('Failed to fetch') || msg.includes('503') || msg.includes('500')) {
+        setErrorMsg('Model service unavailable');
+      } else {
+        setErrorMsg(msg || 'Failed to submit voyage');
+      }
     }
   };
 

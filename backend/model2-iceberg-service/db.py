@@ -1,5 +1,6 @@
 import os
 import uuid
+from datetime import datetime
 from sqlalchemy import create_engine, Column, Float, Integer, String, DateTime, Boolean, Text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.dialects.postgresql import UUID
@@ -26,4 +27,5 @@ class IcebergPrediction(Base):
     horizon_day          = Column(Integer, nullable=False)
     predicted_position   = Column(Text, nullable=False)
     confidence_radius_km = Column(Float)
+    created_at           = Column(DateTime(timezone=True), default=datetime.utcnow)
 

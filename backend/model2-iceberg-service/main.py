@@ -1,26 +1,23 @@
 """
 HimDrishti — Model 2: Iceberg Trajectory Prediction Service
 
-CAVEAT: Evaluation numbers are pipeline-sanity checks, not real-world accuracy.
-These predictions are never surfaced to end users as ground truth.
+Physics-informed drift model driven by real, live-fetched wind and ocean
+current forecasts (see env_data.py / ml_utils.py). No random or fabricated
+environmental inputs are used.
 """
 
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException
-import numpy as np
 
-from ml_utils import load_models, predict_iceberg_trajectory, displacement_to_latlon, feature_columns, config
+from ml_utils import load_models, predict_iceberg_trajectory
+from env_data import fetch_wind_forecast, fetch_current_forecast
 from db import SessionLocal, IcebergTrack, IcebergPrediction
 from seed import seed_icebergs
-from sqlalchemy import func
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Load model artifacts once at startup
     load_models()
-    # Seed demo icebergs
     seed_icebergs()
     yield
 
@@ -33,109 +30,54 @@ def health():
     return {"status": "ok", "service": "model2-iceberg-service"}
 
 
+def _parse_point(wkt: str):
+    coords = wkt.replace("POINT(", "").replace(")", "").split()
+    return float(coords[0]), float(coords[1])  # lon, lat
+
+
+@app.post("/seed")
+def reseed():
+    """Re-run the demo iceberg seed (idempotent). Kept for pipeline compatibility with the gateway's orchestration step."""
+    seed_icebergs()
+    return {"status": "ok"}
+
+
 @app.get("/predict/{iceberg_id}")
 def predict_iceberg(iceberg_id: str):
     """
-    Predict 7-day trajectory for a given iceberg.
-    Pulls last 7 days of track data, runs the GRU+physics blend,
-    and writes predictions to iceberg_predictions table.
+    Predict a real, physics-informed 7-day trajectory for a tracked iceberg
+    using genuinely fetched wind + ocean-current forecasts at its last known
+    position, and write the results to iceberg_predictions.
     """
-    from ml_utils import feature_columns as fc, config as cfg
-
     db = SessionLocal()
     try:
-        # Pull last 7 days of iceberg track data, ordered by time
-        tracks = (
+        last_track = (
             db.query(IcebergTrack)
             .filter(IcebergTrack.iceberg_id == iceberg_id)
-            .order_by(IcebergTrack.observed_at.asc())
-            .limit(7)
-            .all()
+            .order_by(IcebergTrack.observed_at.desc())
+            .first()
         )
-
-        if not tracks:
+        if last_track is None:
             raise HTTPException(status_code=404, detail=f"Iceberg '{iceberg_id}' not found in tracks")
 
-        if len(tracks) < 7:
-            raise HTTPException(status_code=422, detail=f"Need 7 days of data, found {len(tracks)}")
+        anchor_lon, anchor_lat = _parse_point(str(last_track.position))
 
-        # Get the anchor (last known position)
-        last_track = tracks[-1]
-        # Extract lat/lon from the WKT point string
-        anchor_point = str(last_track.position)
-        # Parse "POINT(lon lat)"
-        coords = anchor_point.replace("POINT(", "").replace(")", "").split()
-        anchor_lon, anchor_lat = float(coords[0]), float(coords[1])
+        try:
+            wind_series = fetch_wind_forecast(anchor_lat, anchor_lon, days=7)
+            current_series = fetch_current_forecast(anchor_lat, anchor_lon, days=7)
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"Could not fetch real environmental forecast data: {e}")
 
-        # Build the feature matrix (7, 23)
-        # In mock mode, we synthesize plausible feature values from the track data
-        n_features = cfg.get("n_features", 23) if cfg else 23
-        feature_matrix = np.zeros((7, n_features))
-
-        velocity_u = 0.0
-        velocity_v = 0.0
-
-        for i, track in enumerate(tracks):
-            pt = str(track.position)
-            c = pt.replace("POINT(", "").replace(")", "").split()
-            lon, lat = float(c[0]), float(c[1])
-
-            # Fill known columns with plausible values from track data
-            feature_matrix[i, 0] = lat                       # latitude
-            feature_matrix[i, 1] = lon                       # longitude
-            feature_matrix[i, 2] = 1.0                       # time_gap_prev_days
-            feature_matrix[i, 3] = track.velocity_ms or 0.05 # iceberg_speed
-
-            # Compute velocity in km/day from speed + direction
-            import math
-            speed_km_day = (track.velocity_ms or 0.05) * 86.4  # m/s -> km/day
-            dir_rad = math.radians(track.direction_deg or 0)
-            vel_u = speed_km_day * math.sin(dir_rad)
-            vel_v = speed_km_day * math.cos(dir_rad)
-
-            feature_matrix[i, 4] = vel_u                     # velocity_u_km_day
-            feature_matrix[i, 5] = vel_v                     # velocity_v_km_day
-            feature_matrix[i, 6] = 0.0                       # acceleration_u
-            feature_matrix[i, 7] = 0.0                       # acceleration_v
-
-            # Environmental features (mocked plausible Antarctic values)
-            feature_matrix[i, 8] = np.random.uniform(5, 15)  # wind_speed
-            feature_matrix[i, 9] = np.random.uniform(-1, 1)  # wind_direction_sin
-            feature_matrix[i, 10] = np.random.uniform(-1, 1) # wind_direction_cos
-            feature_matrix[i, 11] = np.random.uniform(-5, 5) # u10
-            feature_matrix[i, 12] = np.random.uniform(-5, 5) # v10
-            feature_matrix[i, 13] = np.random.uniform(0.1, 0.5) # current_speed
-            feature_matrix[i, 14] = np.random.uniform(-1, 1) # current_direction_sin
-            feature_matrix[i, 15] = np.random.uniform(-1, 1) # current_direction_cos
-            feature_matrix[i, 16] = np.random.uniform(-0.3, 0.3) # uo
-            feature_matrix[i, 17] = np.random.uniform(-0.3, 0.3) # vo
-            feature_matrix[i, 18] = vel_u * 0.1              # drift_u (fraction of velocity)
-            feature_matrix[i, 19] = vel_v * 0.1              # drift_v
-            feature_matrix[i, 20] = speed_km_day * 0.1       # ice_drift_speed
-            feature_matrix[i, 21] = 15.0                     # size_1 (default)
-            feature_matrix[i, 22] = 8.0                      # size_2 (default)
-
-            if i == len(tracks) - 1:
-                velocity_u = vel_u
-                velocity_v = vel_v
-
-        # Run prediction (physics + model blend)
-        displacements, confidence_radii = predict_iceberg_trajectory(
-            feature_matrix, velocity_u, velocity_v
+        positions, confidence_radii = predict_iceberg_trajectory(
+            anchor_lat, anchor_lon, wind_series, current_series
         )
 
-        # Delete old predictions for this iceberg
         db.query(IcebergPrediction).filter(
             IcebergPrediction.iceberg_id == iceberg_id
         ).delete()
 
-        # Convert displacements to lat/lon and write to DB
         results = []
-        for day_idx in range(7):
-            dx, dy = displacements[day_idx]
-            pred_lat, pred_lon = displacement_to_latlon(anchor_lat, anchor_lon, dx, dy)
-            radius = confidence_radii[day_idx]
-
+        for day_idx, ((pred_lat, pred_lon), radius) in enumerate(zip(positions, confidence_radii)):
             prediction = IcebergPrediction(
                 iceberg_id=iceberg_id,
                 horizon_day=day_idx + 1,
@@ -143,7 +85,6 @@ def predict_iceberg(iceberg_id: str):
                 confidence_radius_km=radius,
             )
             db.add(prediction)
-
             results.append({
                 "day": day_idx + 1,
                 "lat": round(pred_lat, 6),
@@ -157,6 +98,8 @@ def predict_iceberg(iceberg_id: str):
             "iceberg_id": iceberg_id,
             "anchor_lat": anchor_lat,
             "anchor_lon": anchor_lon,
+            "wind_forecast_kmh_deg": wind_series,
+            "current_forecast_kmh_deg": current_series,
             "predictions": results,
         }
 

@@ -3,8 +3,23 @@ HimDrishti API Gateway — Main Application
 Central entry point. Mounts all route groups and serves the REST API.
 """
 
+import logging
+import sys
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Nothing in this codebase ever called logging.basicConfig(), so the root
+# logger had no handler — application logger.info()/.warning() calls (in
+# pipeline.py especially) were being silently dropped or unreliably
+# surfaced depending on Python's logging fallback behavior, making the
+# background voyage pipeline's real errors effectively invisible in
+# `docker logs`. Configure it explicitly once, here, at startup.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    stream=sys.stdout,
+)
 
 from routes_auth import router as auth_router
 from routes_voyage import router as voyage_router

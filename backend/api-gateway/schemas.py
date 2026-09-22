@@ -4,7 +4,7 @@ Request/response schemas for all API endpoints.
 """
 
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from datetime import datetime
 from uuid import UUID
 
@@ -56,12 +56,16 @@ class VoyageCreateRequest(BaseModel):
     fuel_capacity_l: Optional[float] = Field(None, gt=0)
     fuel_consumption_lph: Optional[float] = Field(None, gt=0)
     departure_time: datetime
-    risk_tolerance: str = Field(default="Medium", pattern="^(Low|Medium|High)$")
+    risk_tolerance: str = Field(default="balanced")
 
 
 class VoyageCreateResponse(BaseModel):
     voyage_id: UUID
     status: str
+
+
+class RecomputeRequest(BaseModel):
+    risk_tolerance: str = Field(default="balanced")
 
 
 class WaypointOut(BaseModel):
@@ -74,13 +78,35 @@ class WaypointOut(BaseModel):
     risk_factors: Optional[dict] = None
 
 
+class DataProvenance(BaseModel):
+    """Real values captured during pipeline execution, identifying which
+    real model produced the route and which real satellite scene (if any)
+    contributed to it — not fabricated status text."""
+    sic_model_used: Optional[str] = None
+    satellite_status: Optional[str] = None
+    satellite_scene_id: Optional[str] = None
+    satellite_scene_datetime: Optional[str] = None
+    satellite_n_detections: Optional[int] = None
+    satellite_bbox: Optional[Tuple[float, float, float, float]] = None
+    satellite_image_url: Optional[str] = None
+
+
 class RouteResponse(BaseModel):
+    status: Optional[str] = "planned"
+    origin: Optional[dict] = None
+    destination: Optional[dict] = None
     waypoints: List[WaypointOut]
     total_distance_km: Optional[float] = None
     eta: Optional[datetime] = None
+    eta_formatted: Optional[str] = None
     total_fuel_estimate_l: Optional[float] = None
     overall_risk_score: Optional[float] = None
+    sea_ice_risk: Optional[float] = None
+    iceberg_risk: Optional[float] = None
+    weather_risk: Optional[float] = None
+    satellite_risk: Optional[float] = None
     reasoning: Optional[str] = None
+    data_provenance: Optional[DataProvenance] = None
 
 
 class VoyageListItem(BaseModel):
@@ -106,11 +132,23 @@ class VoyageListResponse(BaseModel):
 # =============================================================
 class AlertOut(BaseModel):
     alert_id: UUID
+    voyage_id: UUID
     alert_type: str
     severity: str
+    title: Optional[str] = None
     message: str
+    status: Optional[str] = "ACTIVE"
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    route_waypoint: Optional[int] = None
+    route_segment: Optional[str] = None
+    risk_score: Optional[float] = None
+    source_model: Optional[str] = None
+    forecast_time: Optional[datetime] = None
+    distance_from_route_km: Optional[float] = None
     triggered_at: datetime
     acknowledged: bool
+    acknowledged_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -119,3 +157,5 @@ class AlertOut(BaseModel):
 class AlertAckResponse(BaseModel):
     alert_id: UUID
     acknowledged: bool
+    status: Optional[str] = "ACKNOWLEDGED"
+

@@ -1,15 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { useAuthStore, useAlertStore } from '../../store/useStore';
+import { useAuthStore, useAlertStore, useVoyageStore } from '../../store/useStore';
+
+const formatUtc = (d: Date) =>
+  `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
 
 export const AppLayout: React.FC = () => {
   const navigate = useNavigate();
   const { email, role, logout } = useAuthStore();
-  const { alerts } = useAlertStore();
+  const { alerts, fetchAlerts } = useAlertStore();
+  const { activeVoyageId } = useVoyageStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [utcNow, setUtcNow] = useState<string>(() => formatUtc(new Date()));
 
-  const unackAlerts = alerts.filter((a) => !a.acknowledged).length;
+  useEffect(() => {
+    fetchAlerts(activeVoyageId || undefined);
+  }, [activeVoyageId, fetchAlerts]);
+
+  useEffect(() => {
+    const id = setInterval(() => setUtcNow(formatUtc(new Date())), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const unackAlerts = alerts.filter((a) => !a.acknowledged && a.status !== 'RESOLVED').length;
 
   const handleLogout = () => {
     logout();
@@ -107,7 +121,7 @@ export const AppLayout: React.FC = () => {
           <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#101d29] border border-[#3c494e]/40">
             <span className="w-2 h-2 rounded-full bg-[#39ff14] animate-pulse shadow-[0_0_8px_#39ff14]" />
             <span className="font-mono text-[10px] text-[#aee9ff] tracking-wider uppercase">
-              SATCOM LIVE • UTC 14:32
+              SATCOM LIVE • UTC {utcNow}
             </span>
           </div>
         </div>
