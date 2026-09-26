@@ -3,7 +3,6 @@ import json
 import requests
 from datetime import datetime
 
-from sqlalchemy import func
 
 from db import (
     SessionLocal,
@@ -89,10 +88,16 @@ def get_model_outputs(db, voyage_id):
 
     for row in iceberg_rows:
 
-        # Convert PostGIS POINT to text
-        point_wkt = db.execute(
-            func.ST_AsText(row.predicted_position)
-        ).scalar()
+        # position is stored as plain WKT text (see models.py / the schema
+        # migrations — this database never uses PostGIS geometry columns
+        # or the postgis extension), so it's already usable as-is. The
+        # previous func.ST_AsText(...) call assumed a native PostGIS
+        # geometry type and a live PostGIS extension; it happened to work
+        # locally only because the local dev Postgres image bundles
+        # PostGIS regardless of whether the schema uses it, and broke
+        # immediately against a real Cloud SQL instance (plain Postgres,
+        # no PostGIS): "function st_astext(unknown) does not exist".
+        point_wkt = row.predicted_position
 
         lat = None
         lon = None
@@ -137,9 +142,9 @@ def get_model_outputs(db, voyage_id):
 
     for row in waypoint_rows:
 
-        point_wkt = db.execute(
-            func.ST_AsText(row.position)
-        ).scalar()
+        # See the comment above the model2_output loop — position is
+        # already plain WKT text, no PostGIS/ST_AsText needed.
+        point_wkt = row.position
 
         lat = None
         lon = None

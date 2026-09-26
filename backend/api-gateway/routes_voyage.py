@@ -22,7 +22,7 @@ from schemas import (
     VoyageListResponse, VoyageListItem,
 )
 from auth import get_current_user
-from pipeline import process_voyage_pipeline, recompute_route_only
+from pipeline import process_voyage_pipeline, recompute_route_only, _auth_headers_for
 
 MODEL3_URL = os.getenv("MODEL3_URL", "http://localhost:8003")
 PC_SAS_SIGN_URL = "https://planetarycomputer.microsoft.com/api/sas/v1/sign"
@@ -334,7 +334,11 @@ def get_recommendation(
         raise HTTPException(status_code=403, detail="Access denied")
 
     try:
-        resp = http.get(f"{MODEL3_URL}/route/{voyage_id}/recommendation", timeout=30)
+        resp = http.get(
+            f"{MODEL3_URL}/route/{voyage_id}/recommendation",
+            timeout=30,
+            headers=_auth_headers_for(MODEL3_URL),
+        )
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Model 3 recommendation service unreachable: {e}")
 

@@ -324,11 +324,33 @@ def run_alert_pipeline(voyage_id: str, db: Session) -> List[Alert]:
             db_alert.resolved_at = now
             logger.info(f"[ALERT_ENGINE] Alert {db_alert.alert_id} hazard cleared → status set to RESOLVED.")
 
+    # This function shares its `db` session with the caller (pipeline.py),
+    # which by this point already has its own uncommitted changes pending
+    # on the SAME session (voyage.status = "planned", satellite metadata,
+    # etc. — see process_voyage_pipeline). A bare db.commit()/db.rollback()
+    # here operates on that whole shared transaction, not just this
+    # function's own writes: if an alert insert ever violates a DB
+    # constraint, db.rollback() would silently discard the caller's
+    # pending voyage-status update too, while the caller's own log
+    # statement (based on the in-memory ORM attribute, unaware of the
+    # rollback) would still claim success — exactly what happened with a
+    # freshly migrated database where an old, wrongly-named check
+    # constraint from 001_init.sql was never actually replaced by
+    # 002_alerts_update.sql (see db/migrations/010_fix_alert_check_
+    # constraint_names.sql): every voyage silently stayed "processing"
+    # forever even though the pipeline logged completion.
+    #
+    # A SAVEPOINT scopes rollback-on-failure to only this function's own
+    # writes. Nothing is committed here at all — that stays the caller's
+    # responsibility (process_voyage_pipeline's own outer db.commit()),
+    # so the alert writes and the voyage-status update land atomically
+    # together, exactly once, and a failure in one can never silently
+    # erase the other.
     try:
-        db.commit()
-        logger.info(f"[ALERT_ENGINE] Successfully persisted {len(result_records)} active/acknowledged alerts to PostgreSQL.")
+        with db.begin_nested():
+            db.flush()
+        logger.info(f"[ALERT_ENGINE] Staged {len(result_records)} active/acknowledged alerts for commit.")
     except Exception as exc:
-        db.rollback()
-        logger.error(f"[ALERT_ENGINE] Failed to commit alerts to database: {exc}")
+        logger.error(f"[ALERT_ENGINE] Failed to stage alerts to database (caller's own pending changes are unaffected): {exc}")
 
     return result_records
