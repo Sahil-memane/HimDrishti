@@ -73,7 +73,18 @@ def attach_attributes(G, db, risk_tolerance, voyage_id=None):
     sic_records = db.query(SeaIceForecast).filter(SeaIceForecast.voyage_id == voyage_id).all() if voyage_id else []
     if not sic_records:
         print(f"[Model 3] No real sea-ice forecast available for voyage {voyage_id} (Model 1 did not succeed for it) — routing without a real SIC signal for this run.")
-    iceberg_records = db.query(IcebergPrediction).all()
+
+    # iceberg_predictions holds every voyage's Model 2 run, not just one at a
+    # time — reading it unfiltered (as this used to) meant a route was
+    # scored against whichever icebergs happened to be seeded for a
+    # completely different, unrelated voyage. Scope strictly to this
+    # voyage's own real detections, matching sic_records above. If this
+    # voyage's own Model 2 run produced nothing (e.g. no fresh Sentinel-1
+    # scene covered its bbox), iceberg_records stays empty and node cost
+    # falls back to the same neutral default used when SIC is unavailable —
+    # an honest "unknown", not another voyage's real icebergs mislabeled as
+    # this one's.
+    iceberg_records = db.query(IcebergPrediction).filter(IcebergPrediction.voyage_id == voyage_id).all() if voyage_id else []
 
     # Parse iceberg coordinates from Model 2 predictions in DB
     iceberg_pts = []

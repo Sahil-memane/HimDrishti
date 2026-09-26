@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVoyageStore } from '../store/useStore';
-import { api, buildModel3Recommendation, getLastVoyageInputs, type Model3Recommendation } from '../services/api';
+import { api, buildModel3Recommendation, getLastVoyageInputs, KNOWN_VESSELS, type Model3Recommendation } from '../services/api';
 import { InteractivePolarMap } from '../components/map/InteractivePolarMap';
 import type { MapWaypoint } from '../components/map/InteractivePolarMap';
 import { DataProvenanceBar } from '../components/layout/DataProvenanceBar';
@@ -53,6 +53,7 @@ export const DashboardPage: React.FC = () => {
   // (not fabricated); heading is the real bearing from the first to second
   // waypoint of the computed route.
   const realSpeedKnots = inputs?.speed_knots;
+  const realVesselName = inputs?.vessel_id ? KNOWN_VESSELS[inputs.vessel_id] : undefined;
   const realHeadingDeg = (() => {
     if (waypoints.length < 2) return null;
     const [a, b] = waypoints;
@@ -97,6 +98,9 @@ export const DashboardPage: React.FC = () => {
         waypoints={waypoints}
         vesselLat={waypoints[0]?.lat}
         vesselLon={waypoints[0]?.lon}
+        vesselHeading={realHeadingDeg ?? undefined}
+        vesselSpeed={realSpeedKnots ?? undefined}
+        vesselName={realVesselName}
         showSeaIce={showSic}
         showIcebergs={showIcebergs}
         showRiskZones={showRiskZones}

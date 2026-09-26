@@ -31,6 +31,17 @@ export interface LoginResponse {
   email: string;
 }
 
+// The only two vessels seeded in the database (see db/migrations). The map
+// component previously showed "MV Antarctic Explorer" unconditionally
+// regardless of which vessel was actually selected — this is the single
+// source of truth both VoyageSetupPage's picker and the map's vessel label
+// should read from, so a real "RV Polar Research" voyage displays its real
+// vessel name instead of the wrong one.
+export const KNOWN_VESSELS: Record<string, string> = {
+  'b0000000-0000-0000-0000-000000000001': 'MV Antarctic Explorer',
+  'b0000000-0000-0000-0000-000000000002': 'RV Polar Research',
+};
+
 export interface VoyageCreatePayload {
   vessel_id: string;
   start_lat: number;
@@ -175,112 +186,6 @@ let lastVoyageInputs: VoyageCreatePayload | null = null;
 
 export function getLastVoyageInputs(): VoyageCreatePayload | null {
   return lastVoyageInputs;
-}
-
-export function generateDynamicModelRoute(params: VoyageCreatePayload): RouteResponse {
-  const startLat = params.start_lat ?? -42.8821;
-  const startLon = params.start_lon ?? 147.3272;
-  const destLat = params.dest_lat ?? -77.846;
-  const destLon = params.dest_lon ?? 166.6682;
-  const speedKnots = params.speed_knots || 12.5;
-  const fuelRate = params.fuel_consumption_lph || 850;
-  const riskTol = (params.risk_tolerance || 'balanced').toLowerCase();
-
-  const isSafest = riskTol === 'safest' || riskTol === 'low';
-  const isEfficient = riskTol === 'efficient' || riskTol === 'high';
-
-  const steps = 16;
-  const waypoints: WaypointItem[] = [];
-
-  let totalDistKm = 0;
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    let lat: number;
-    let lon: number;
-
-    if (destLat < -70 && startLon < 100 && destLon > 150) {
-      const latOffset = isSafest ? 3.5 : isEfficient ? -1.0 : 1.2;
-      if (t < 0.75) {
-        const subT = t / 0.75;
-        lon = Number((startLon + (165.0 - startLon) * subT).toFixed(4));
-        const baseLat = startLat + (-65.0 - startLat) * subT;
-        const arc = Math.sin(subT * Math.PI) * latOffset;
-        lat = Number(Math.min(-60.5, baseLat + arc).toFixed(4));
-      } else {
-        const subT = (t - 0.75) / 0.25;
-        lon = Number((165.0 + (destLon - 165.0) * subT).toFixed(4));
-        lat = Number((-65.0 + (destLat - (-65.0)) * subT).toFixed(4));
-      }
-    } else {
-      const detourAmp = isSafest ? 3.0 : isEfficient ? 0.3 : 1.5;
-      const baseLat = startLat + (destLat - startLat) * t;
-      const baseLon = startLon + (destLon - startLon) * t;
-      const arcOffset = Math.sin(t * Math.PI) * detourAmp;
-      lat = Number((baseLat + arcOffset * 0.35).toFixed(4));
-      lon = Number((baseLon + arcOffset * 0.75).toFixed(4));
-    }
-
-    if (i > 0) {
-      const prev = waypoints[i - 1];
-      const dLat = (lat - prev.lat) * (Math.PI / 180);
-      const dLon = (lon - prev.lon) * (Math.PI / 180);
-      const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(prev.lat * (Math.PI / 180)) * Math.cos(lat * (Math.PI / 180)) * Math.sin(dLon / 2) ** 2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      totalDistKm += 6371 * c;
-    }
-
-    const hours = speedKnots > 0 ? totalDistKm / (speedKnots * 1.852) : 0;
-    const fuel = hours * fuelRate;
-    const baseRisk = isSafest ? 0.08 : isEfficient ? 0.58 : 0.24;
-    const segRisk = Number(Math.min(0.95, baseRisk + (i % 3) * 0.03).toFixed(2));
-
-    waypoints.push({
-      sequence_no: i + 1,
-      lat,
-      lon,
-      eta: new Date(Date.now() + hours * 3600 * 1000).toISOString(),
-      cumulative_fuel_l: Math.round(fuel),
-      segment_risk_score: segRisk,
-      risk_factors: {
-        ice_risk: Number((segRisk * 0.5).toFixed(2)),
-        iceberg_risk: Number((segRisk * 0.35).toFixed(2)),
-        weather_risk: Number((segRisk * 0.15).toFixed(2)),
-      },
-    });
-  }
-
-  const hoursTotal = speedKnots > 0 ? totalDistKm / (speedKnots * 1.852) : 0;
-  const days = Math.floor(hoursTotal / 24);
-  const remainingHours = Math.round(hoursTotal % 24);
-
-  const overallRiskScore = isSafest ? 0.09 : isEfficient ? 0.58 : 0.24;
-  const reasoningText = isSafest
-    ? `Model 3 A* Engine (SAFEST Profile): Computed 3.5° wide detour arc bypassing all 90%+ Sea-Ice Concentration (SIC) ridges in Sector 7G and maintaining a 35km+ buffer clear of Model 2 iceberg drift corridors.`
-    : isEfficient
-    ? `Model 3 A* Engine (EFFICIENT Profile): Direct high-speed transit corridor saving ${Math.round(
-        totalDistKm * 0.15
-      )} KM & 14,200 L fuel while navigating passable pack ice leads at cruising speed.`
-    : `Model 3 A* Engine (BALANCED Profile): Optimal A* least-cost path balancing fuel efficiency (${Math.round(
-        waypoints[waypoints.length - 1].cumulative_fuel_l
-      ).toLocaleString()} L) with a low composite risk index (${overallRiskScore}).`;
-
-  return {
-    status: 'planned',
-    origin: { lat: startLat, lon: startLon },
-    destination: { lat: destLat, lon: destLon },
-    waypoints,
-    total_distance_km: Math.round(totalDistKm),
-    eta: `${days}d ${remainingHours}h`,
-    eta_formatted: `${days}d ${remainingHours}h`,
-    total_fuel_estimate_l: waypoints[waypoints.length - 1].cumulative_fuel_l,
-    overall_risk_score: overallRiskScore,
-    sea_ice_risk: Number((overallRiskScore * 0.5).toFixed(2)),
-    iceberg_risk: Number((overallRiskScore * 0.35).toFixed(2)),
-    weather_risk: Number((overallRiskScore * 0.15).toFixed(2)),
-    reasoning: reasoningText,
-  };
 }
 
 export function buildModel3Recommendation(profile: string, route: RouteResponse): Model3Recommendation {
@@ -543,8 +448,9 @@ export const api = {
     return res.json();
   },
 
-  async getIcebergForecast(bbox: string, day: number) {
-    const res = await fetch(`${API_BASE_URL}/forecast/icebergs?bbox=${encodeURIComponent(bbox)}&day=${day}`, {
+  async getIcebergForecast(bbox: string, day: number, voyageId?: string | null) {
+    const voyageParam = voyageId ? `&voyage_id=${encodeURIComponent(voyageId)}` : '';
+    const res = await fetch(`${API_BASE_URL}/forecast/icebergs?bbox=${encodeURIComponent(bbox)}&day=${day}${voyageParam}`, {
       method: 'GET',
       headers: getAuthHeaders(),
     });

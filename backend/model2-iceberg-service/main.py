@@ -8,17 +8,17 @@ environmental inputs are used.
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
 from ml_utils import load_models, predict_iceberg_trajectory
 from env_data import fetch_wind_forecast, fetch_current_forecast
 from db import SessionLocal, IcebergTrack, IcebergPrediction
-from seed import seed_icebergs
+from seed import seed_real_icebergs
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     load_models()
-    seed_icebergs()
     yield
 
 
@@ -35,11 +35,32 @@ def _parse_point(wkt: str):
     return float(coords[0]), float(coords[1])  # lon, lat
 
 
+class SarDetection(BaseModel):
+    lat: float
+    lon: float
+    estimated_length_m: float | None = None
+    peak_intensity: float | None = None
+
+
+class SeedRequest(BaseModel):
+    voyage_id: str
+    detections: list[SarDetection] = []
+    scene_datetime: str | None = None
+
+
 @app.post("/seed")
-def reseed():
-    """Re-run the demo iceberg seed (idempotent). Kept for pipeline compatibility with the gateway's orchestration step."""
-    seed_icebergs()
-    return {"status": "ok"}
+def reseed(req: SeedRequest):
+    """
+    Seed this voyage's real tracked icebergs from Model 3's real Sentinel-1
+    SAR detections for its route bbox (passed in by the gateway's pipeline —
+    see sar_detection.py / /sar-scan). Idempotent per voyage: replaces only
+    this voyage's own prior tracks. An empty detections list (no real scene
+    covered this route) honestly seeds zero icebergs rather than fabricating any.
+    """
+    iceberg_ids = seed_real_icebergs(
+        req.voyage_id, [d.model_dump() for d in req.detections], req.scene_datetime
+    )
+    return {"status": "ok", "iceberg_ids": iceberg_ids}
 
 
 @app.get("/predict/{iceberg_id}")
@@ -83,6 +104,7 @@ def predict_iceberg(iceberg_id: str):
                 horizon_day=day_idx + 1,
                 predicted_position=f"POINT({pred_lon} {pred_lat})",
                 confidence_radius_km=radius,
+                voyage_id=last_track.voyage_id,
             )
             db.add(prediction)
             results.append({
@@ -113,11 +135,14 @@ def predict_iceberg(iceberg_id: str):
 
 
 @app.get("/icebergs")
-def list_icebergs():
-    """List all tracked iceberg IDs (for the frontend to iterate over)."""
+def list_icebergs(voyage_id: str | None = None):
+    """List tracked iceberg IDs (for the pipeline/frontend to iterate over). Scoped to a voyage when given."""
     db = SessionLocal()
     try:
-        ids = db.query(IcebergTrack.iceberg_id).distinct().all()
+        query = db.query(IcebergTrack.iceberg_id).distinct()
+        if voyage_id:
+            query = query.filter(IcebergTrack.voyage_id == voyage_id)
+        ids = query.all()
         return {"icebergs": [r[0] for r in ids]}
     finally:
         db.close()

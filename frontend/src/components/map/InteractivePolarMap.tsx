@@ -50,6 +50,8 @@ export interface InteractivePolarMapProps {
   vesselLon?: number;
   vesselHeading?: number;
   vesselSpeed?: number;
+  /** The actually-selected vessel's real name (from the voyage's vessel_id) — not a fixed demo vessel. */
+  vesselName?: string;
   showSeaIce?: boolean;
   showIcebergs?: boolean;
   /** Show real iceberg last-known-position + drift-vector detail layers. Off by default — this is forecast-analysis detail, not needed on the route-decision (Dashboard) map. */
@@ -83,6 +85,7 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
   vesselLon = 40.0,
   vesselHeading = 45,
   vesselSpeed = 12.5,
+  vesselName = 'MV Antarctic Explorer',
   showSeaIce = false,
   showIcebergs = true,
   showIcebergDrift = false,
@@ -293,7 +296,7 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
       updateRouteGeoJSON(map, activeWaypoints);
       updateRiskZonesGeoJSON(map, showRiskZones, activeWaypoints);
       updateIcebergsGeoJSON(map, showIcebergs, activeWaypoints);
-      updateVesselGeoJSON(map, vesselLat, vesselLon, vesselHeading, vesselSpeed);
+      updateVesselGeoJSON(map, vesselLat, vesselLon, vesselHeading, vesselSpeed, vesselName);
       setLayerGroupVisibility(map, [MAP_LAYERS.BATHYMETRY], showBathymetry);
       updateSarQuicklookImage(map, showSarQuicklook, sarBbox, sarImageUrl);
     };
@@ -324,7 +327,7 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
 
     updateRouteGeoJSON(map, activeWaypoints);
     updateRiskZonesGeoJSON(map, showRiskZones, activeWaypoints);
-    updateVesselGeoJSON(map, currentVesselLat, currentVesselLon, vesselHeading, vesselSpeed);
+    updateVesselGeoJSON(map, currentVesselLat, currentVesselLon, vesselHeading, vesselSpeed, vesselName);
     updateAlertsGeoJSON(map, alerts);
 
     // Compute bounding box for model forecast queries
@@ -344,7 +347,7 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
     // changes what's shown instead of always displaying day 1.
     Promise.all([
       api.getSeaIceForecast(bbox, horizonDay, voyageId).catch(() => null),
-      api.getIcebergForecast(bbox, horizonDay).catch(() => null),
+      api.getIcebergForecast(bbox, horizonDay, voyageId).catch(() => null),
     ]).then(([seaIceGeoJSON, icebergGeoJSON]) => {
       if (mapRef.current) {
         updateSeaIceGeoJSON(mapRef.current, showSeaIce, seaIceGeoJSON);
@@ -374,7 +377,7 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
       activeWaypoints.forEach((wp) => bounds.extend([wp.lon, wp.lat]));
       map.fitBounds(bounds, { padding: 80, maxZoom: 8, duration: 1000 });
     }
-  }, [waypoints, showSeaIce, showIcebergs, showIcebergDrift, showRiskZones, showBathymetry, showSarQuicklook, sarBbox, sarImageUrl, vesselLat, vesselLon, vesselHeading, vesselSpeed, horizonDay, voyageId, mapLoaded, mapError]);
+  }, [waypoints, showSeaIce, showIcebergs, showIcebergDrift, showRiskZones, showBathymetry, showSarQuicklook, sarBbox, sarImageUrl, vesselLat, vesselLon, vesselHeading, vesselSpeed, vesselName, horizonDay, voyageId, mapLoaded, mapError]);
 
   const handleResetAntarctica = () => {
     if (!mapRef.current || mapError) return;
@@ -507,7 +510,7 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
               </circle>
               <circle r="8" fill="#003543" stroke="#00daf3" strokeWidth="2.5" />
               <text x="-25" y="-14" fill="#00daf3" fontSize="11" fontFamily="monospace" fontWeight="bold">
-                MV Antarctic Explorer ({vesselSpeed} KTS)
+                {vesselName} ({vesselSpeed} KTS)
               </text>
             </g>
           </svg>

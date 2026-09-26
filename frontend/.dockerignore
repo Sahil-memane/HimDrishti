@@ -1,8 +1,12 @@
 node_modules
 dist
 dist-ssr
+.vite
+coverage
 temp_UI
 .git
+.env
+.env.*
 *.log
 *.local
 .vscode

@@ -119,7 +119,7 @@ def predict_sea_ice(req: PredictRequest):
         "status": "success",
         "forecast_date": str(today),
         "model_used": model_used,
-        "source": "Real trained model on NOAA PolarWatch satellite observations + real Open-Meteo weather/SST history",
+        "source": "Real trained model on OSI SAF satellite observations + real Open-Meteo weather/SST history",
         "predictions": [
             {"day": i + 1, "sic": day_totals[i] / n_cells, "confidence": day_confidences[i] / n_cells}
             for i in range(7)

@@ -27,6 +27,7 @@ class IcebergPrediction(Base):
     horizon_day         = Column(Integer, nullable=False)
     predicted_position  = Column(Text, nullable=False)
     confidence_radius_km = Column(Float)
+    voyage_id            = Column(UUID(as_uuid=True), nullable=True)
 
 class Waypoint(Base):
     __tablename__ = "waypoints"

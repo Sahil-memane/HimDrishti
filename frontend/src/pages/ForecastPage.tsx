@@ -169,7 +169,7 @@ export const ForecastPage: React.FC = () => {
             {sicUnavailableForVoyage && !summaryFetchFailed && (
               <div className="glass-panel rounded-lg border border-[#f59e0b]/40 bg-[#1a1206]/60 p-2.5 flex flex-col gap-0.5">
                 <span className="font-mono text-xs font-bold text-[#ffb4ab]">ICE FORECAST UNAVAILABLE</span>
-                <span className="font-mono text-[9px] text-[#bbc9cf]">NOAA satellite data provider did not respond when this voyage was planned.</span>
+                <span className="font-mono text-[9px] text-[#bbc9cf]">Live satellite data provider did not respond when this voyage was planned.</span>
               </div>
             )}
 
@@ -374,7 +374,7 @@ export const ForecastPage: React.FC = () => {
               </h3>
               <div className="space-y-1.5 text-[11px] font-mono">
                 <Row label="Model 1" value={modelUsed === 'lstm' ? 'Trained LSTM (primary)' : modelUsed === 'gbr' ? 'Gradient Boosting (fallback)' : 'N/A'} />
-                <Row label="Model 1 Source" value="NOAA PolarWatch satellite SIC observations" small />
+                <Row label="Model 1 Source" value="OSI SAF satellite SIC observations" small />
                 <Row label="Model 2" value="Physics-informed drift model" />
                 <Row label="Model 2 Source" value="Real Open-Meteo wind/current forecasts (tracked positions are demo-seeded in this environment)" small />
                 <Row label="Sea-Ice Generated" value={fmtTimestamp(summary?.sea_ice.forecast_date ? `${summary.sea_ice.forecast_date}T00:00:00Z` : null)} />

@@ -744,6 +744,7 @@ export function updateVesselGeoJSON(
   vesselLon?: number,
   heading: number = 45,
   speed: number = 14.2,
+  name: string = 'MV Antarctic Explorer',
   defaultLat: number = -65.2,
   defaultLon: number = 70.4
 ): void {
@@ -760,7 +761,7 @@ export function updateVesselGeoJSON(
       coordinates: [lon, lat],
     },
     properties: {
-      name: 'MV Antarctic Explorer',
+      name,
       heading,
       speed,
     },

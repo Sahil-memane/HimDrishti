@@ -165,6 +165,7 @@ class IcebergTrack(Base):
     position      = Column(Text, nullable=False)
     velocity_ms   = Column(Float)
     direction_deg = Column(Float)
+    voyage_id     = Column(UUID(as_uuid=True), nullable=True)
 
     __table_args__ = (
         CheckConstraint("velocity_ms >= 0", name="ck_track_velocity"),
@@ -184,6 +185,7 @@ class IcebergPrediction(Base):
     predicted_position  = Column(Text, nullable=False)
     confidence_radius_km = Column(Float)
     created_at          = Column(DateTime(timezone=True), default=datetime.utcnow)
+    voyage_id           = Column(UUID(as_uuid=True), nullable=True)
 
     __table_args__ = (
         UniqueConstraint("iceberg_id", "horizon_day", name="uq_iceberg_pred"),

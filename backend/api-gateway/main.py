@@ -4,6 +4,7 @@ Central entry point. Mounts all route groups and serves the REST API.
 """
 
 import logging
+import os
 import sys
 
 from fastapi import FastAPI
@@ -32,10 +33,18 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# -- CORS (allow frontend dev server) --
+# -- CORS --
+# CORS_ORIGINS, if set, is a comma-separated allowlist (e.g. the deployed
+# frontend's real origin) — deploy.sh sets this once the frontend's Cloud
+# Run URL is known. Left unset, this defaults to "*" for local docker
+# compose, where the frontend is always same-machine and there's no
+# untrusted origin to restrict.
+_cors_origins_env = os.getenv("CORS_ORIGINS", "*").strip()
+_cors_origins = ["*"] if _cors_origins_env == "*" else [o.strip() for o in _cors_origins_env.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

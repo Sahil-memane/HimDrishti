@@ -1,0 +1,38 @@
+# This repo builds each service from its OWN subdirectory as the Docker
+# build context (see docker-compose.yml's per-service `build:` paths), so
+# Docker actually applies backend/*/.dockerignore and frontend/.dockerignore
+# — not this file — to those builds. This root-level file is kept for
+# consistency/documentation and in case a build context is ever set to the
+# repo root (e.g. a future CI/Cloud Build config).
+
+.git
+.gitignore
+.dockerignore
+README.md
+docs/
+*.docx
+*.pdf
+
+node_modules/
+dist/
+build/
+.vite/
+coverage/
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+.env
+.env.*
+!.env.example
+deployment/gcp/.env.deploy
+deployment/gcp/.db_password.local
+
+.vscode/
+.idea/
+*.log
+tmp/
+temp/
+.DS_Store
+Thumbs.db

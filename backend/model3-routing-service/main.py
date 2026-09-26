@@ -5,6 +5,7 @@ from db import SessionLocal, Waypoint, RiskScore
 from grid import build_navigation_grid, get_closest_node, get_closest_navigable_node, haversine
 from engine import attach_attributes, run_astar_search
 from llm_service import generate_route_recommendation
+from sar_detection import get_sar_hazard_detections
 
 app = FastAPI(title="Model 3: A* Routing Engine")
 
@@ -43,6 +44,20 @@ def route_recommendation(voyage_id: str):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/sar-scan")
+def sar_scan(min_lat: float, max_lat: float, min_lon: float, max_lon: float):
+    """
+    Real Sentinel-1 SAR CFAR hazard scan for a bounding box (see
+    sar_detection.py), exposed standalone so the gateway can feed genuine
+    per-voyage iceberg detections into Model 2 before routing, instead of
+    Model 2 only ever seeing this signal indirectly through /route. This
+    reuses the same bbox-day cache attach_attributes() already relies on, so
+    calling this ahead of /route costs no extra real satellite fetch.
+    """
+    detections, scene_meta = get_sar_hazard_detections(min_lat, max_lat, min_lon, max_lon)
+    return {"detections": detections, "scene_meta": scene_meta}
 
 @app.post("/route")
 def calculate_route(req: RouteRequest):

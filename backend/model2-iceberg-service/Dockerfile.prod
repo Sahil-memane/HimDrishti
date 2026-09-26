@@ -1,0 +1,22 @@
+# Production image for Cloud Run.
+#
+# Must be built with the REPO ROOT as build context (not this directory),
+# because it needs ml/artifacts/ — the real iceberg-drift model config/
+# metadata files — which live outside this service's own folder. Locally,
+# docker-compose supplies those files via a bind-mounted volume instead (see
+# docker-compose.yml's model2 service); Cloud Run has no such mount, so this
+# image bakes them in directly. Everything else is identical to the local
+# Dockerfile — same base image, same deps, same CMD.
+#
+# Build from repo root:
+#   docker build -f backend/model2-iceberg-service/Dockerfile.prod -t model2 .
+
+FROM python:3.11-slim
+WORKDIR /app
+ENV PIP_DEFAULT_TIMEOUT=1000
+RUN apt-get update && apt-get install -y libpq-dev gcc && rm -rf /var/lib/apt/lists/*
+COPY backend/model2-iceberg-service/requirements.txt .
+RUN pip install --default-timeout=1000 --no-cache-dir -r requirements.txt
+COPY backend/model2-iceberg-service/ .
+COPY ml/artifacts /app/artifacts
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8002"]

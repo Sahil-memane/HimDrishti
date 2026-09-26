@@ -60,7 +60,7 @@ def _bearing_deg(lat1, lon1, lat2, lon2):
     return (math.degrees(math.atan2(x, y)) + 360.0) % 360.0
 
 
-def _build_iceberg_drift_map(db: Session):
+def _build_iceberg_drift_map(db: Session, voyage_id: str | None = None):
     """
     For every tracked iceberg, walk its real stored predicted positions in
     horizon-day order (starting from its real last-observed track position
@@ -68,12 +68,25 @@ def _build_iceberg_drift_map(db: Session):
     consecutive pair. This is genuine geometry over genuine stored
     positions — not a fabricated drift value.
 
+    iceberg_tracks/iceberg_predictions hold every voyage's own real
+    Sentinel-1 SAR detections, not just one at a time — without scoping by
+    voyage_id, every voyage would see the same global set of icebergs
+    regardless of its own route (see 009_iceberg_voyage_scope.sql). When
+    voyage_id is omitted (e.g. the /icebergs map layer, which filters by
+    bbox instead), this intentionally returns every voyage's icebergs.
+
     Returns:
         anchors: {iceberg_id: {"lat", "lon", "observed_at"}}
         drift:   {(iceberg_id, horizon_day): {"drift_km_per_day", "drift_bearing_deg", "prev_lat", "prev_lon"}}
     """
+    track_query = db.query(IcebergTrack.iceberg_id).distinct()
+    pred_query = db.query(IcebergPrediction)
+    if voyage_id:
+        track_query = track_query.filter(IcebergTrack.voyage_id == voyage_id)
+        pred_query = pred_query.filter(IcebergPrediction.voyage_id == voyage_id)
+
     anchors = {}
-    for iceberg_id, in db.query(IcebergTrack.iceberg_id).distinct():
+    for iceberg_id, in track_query:
         last_track = (
             db.query(IcebergTrack)
             .filter(IcebergTrack.iceberg_id == iceberg_id)
@@ -89,7 +102,7 @@ def _build_iceberg_drift_map(db: Session):
             continue
 
     predictions_by_iceberg = {}
-    for p in db.query(IcebergPrediction).order_by(IcebergPrediction.iceberg_id, IcebergPrediction.horizon_day).all():
+    for p in pred_query.order_by(IcebergPrediction.iceberg_id, IcebergPrediction.horizon_day).all():
         predictions_by_iceberg.setdefault(p.iceberg_id, []).append(p)
 
     drift = {}
@@ -177,19 +190,19 @@ def get_sea_ice_forecast(
 def get_iceberg_forecast(
     bbox: str = Query(..., description="minLon,minLat,maxLon,maxLat"),
     day: int = Query(..., ge=1, le=7, description="Forecast horizon day (1-7)"),
+    voyage_id: str | None = Query(None, description="Scope to a specific voyage's real SAR-detected icebergs"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Return predicted iceberg positions as GeoJSON FeatureCollection. Model 2 output only."""
     min_lon, min_lat, max_lon, max_lat = parse_bbox(bbox)
 
-    predictions = (
-        db.query(IcebergPrediction)
-        .filter(IcebergPrediction.horizon_day == day)
-        .all()
-    )
+    pred_query = db.query(IcebergPrediction).filter(IcebergPrediction.horizon_day == day)
+    if voyage_id:
+        pred_query = pred_query.filter(IcebergPrediction.voyage_id == voyage_id)
+    predictions = pred_query.all()
 
-    anchors, drift = _build_iceberg_drift_map(db)
+    anchors, drift = _build_iceberg_drift_map(db, voyage_id)
 
     features = []
     for p in predictions:
@@ -275,8 +288,11 @@ def get_forecast_summary(
             "cell_count": len(rows),
         })
 
-    anchors, drift = _build_iceberg_drift_map(db)
-    ib_rows = db.query(IcebergPrediction).all()
+    anchors, drift = _build_iceberg_drift_map(db, voyage_id)
+    ib_query = db.query(IcebergPrediction)
+    if voyage_id:
+        ib_query = ib_query.filter(IcebergPrediction.voyage_id == voyage_id)
+    ib_rows = ib_query.all()
     ib_by_day: dict[int, list] = {}
     ib_generated_at = None
     for r in ib_rows:

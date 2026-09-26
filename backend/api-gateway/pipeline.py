@@ -20,6 +20,36 @@ MODEL1_URL = os.getenv("MODEL1_URL", "http://localhost:8001")
 MODEL2_URL = os.getenv("MODEL2_URL", "http://localhost:8002")
 MODEL3_URL = os.getenv("MODEL3_URL", "http://localhost:8003")
 
+try:
+    from google.auth.transport.requests import Request as _GoogleAuthRequest
+    from google.oauth2 import id_token as _google_id_token
+    _GOOGLE_AUTH_AVAILABLE = True
+except ImportError:
+    _GOOGLE_AUTH_AVAILABLE = False
+
+
+def _auth_headers_for(url: str) -> dict:
+    """
+    On Cloud Run, model1/2/3 are deployed with --no-allow-unauthenticated,
+    so calls to them must carry a Google-signed identity token whose
+    audience is the target service's own URL — this gateway's service
+    account is granted roles/run.invoker on each model by deploy.sh, but
+    still has to present that token itself; Cloud Run does not do this
+    automatically for you.
+
+    fetch_id_token talks to the GCE/Cloud Run metadata server, which only
+    exists when actually running on GCP. Locally (docker compose), there is
+    no metadata server, so this raises and we return no header — unchanged
+    behavior, since the local model services never require auth anyway.
+    """
+    if not _GOOGLE_AUTH_AVAILABLE:
+        return {}
+    try:
+        token = _google_id_token.fetch_id_token(_GoogleAuthRequest(), url)
+        return {"Authorization": f"Bearer {token}"}
+    except Exception:
+        return {}
+
 
 def _request_with_fallback(method, primary_url: str, endpoint: str, timeout: int, **kwargs):
     """
@@ -33,7 +63,8 @@ def _request_with_fallback(method, primary_url: str, endpoint: str, timeout: int
     """
     primary_err = None
     try:
-        return method(f"{primary_url}{endpoint}", timeout=timeout, **kwargs)
+        headers = {**_auth_headers_for(primary_url), **kwargs.pop("headers", {})}
+        return method(f"{primary_url}{endpoint}", timeout=timeout, headers=headers, **kwargs)
     except http.exceptions.Timeout as e:
         raise TimeoutError(f"{primary_url}{endpoint} timed out after {timeout}s: {e}") from e
     except Exception as e:
@@ -125,13 +156,40 @@ def process_voyage_pipeline(voyage_id: str, db: Session):
             logger.warning(f"Voyage {voyage_id}: Model 1 call error ({e}), continuing anyway.")
 
         # -- Step 2: Model 2 (Iceberg trajectories) --
+        # Real per-voyage icebergs come from Model 3's own Sentinel-1 SAR CFAR
+        # scan of this voyage's bbox (see sar_detection.py) — not a fixed
+        # demo seed. This used to call Model 2 /seed with no data at all,
+        # which just re-asserted two hardcoded demo icebergs (B15/C28, see
+        # 001_init.sql) regardless of the voyage's actual location; every
+        # voyage's "Iceberg Detections" count and Model 3's iceberg-distance
+        # routing cost were silently reading the same two fake positions.
+        logger.info(f"Voyage {voyage_id}: Triggering Model 3 real SAR scan for iceberg seeding ...")
+        detections, scene_datetime = [], None
+        try:
+            r_sar = _get_with_fallback(
+                MODEL3_URL,
+                f"/sar-scan?min_lat={min_lat}&max_lat={max_lat}&min_lon={min_lon}&max_lon={max_lon}",
+                timeout=30,
+            )
+            if r_sar.status_code == 200:
+                sar_data = r_sar.json()
+                detections = sar_data.get("detections", [])
+                scene_datetime = (sar_data.get("scene_meta") or {}).get("scene_datetime")
+                logger.info(f"Voyage {voyage_id}: real SAR scan found {len(detections)} candidate iceberg(s).")
+        except Exception as e:
+            logger.warning(f"Voyage {voyage_id}: SAR scan for iceberg seeding failed ({e}), continuing with zero real detections.")
+
         logger.info(f"Voyage {voyage_id}: Triggering Model 2 /seed and trajectory predictions ...")
         try:
-            r2_seed = _post_with_fallback(MODEL2_URL, "/seed", timeout=15)
+            r2_seed = _post_with_fallback(
+                MODEL2_URL, "/seed",
+                json_data={"voyage_id": voyage_id, "detections": detections, "scene_datetime": scene_datetime},
+                timeout=15,
+            )
             logger.info(f"Voyage {voyage_id}: Model 2 /seed responded {r2_seed.status_code}")
-            
-            # Predict trajectories for seeded icebergs
-            r2_icebergs = _get_with_fallback(MODEL2_URL, "/icebergs", timeout=10)
+
+            # Predict trajectories for this voyage's own seeded icebergs
+            r2_icebergs = _get_with_fallback(MODEL2_URL, f"/icebergs?voyage_id={voyage_id}", timeout=10)
             if r2_icebergs.status_code == 200:
                 iceberg_list = r2_icebergs.json().get("icebergs", [])
                 for ib_id in iceberg_list:

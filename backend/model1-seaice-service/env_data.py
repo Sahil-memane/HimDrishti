@@ -1,33 +1,58 @@
 """
 Real data fetch for Model 1 (sea-ice concentration forecast).
 
-Pulls genuine recent satellite sea-ice concentration observations from NOAA
-PolarWatch (dataset `noaacwVIIRSn21iceconcSP06Daily4Day`, no auth required —
-the same real, no-authentication source used to train the model, see
-ml/training/train_model1_sic.py) plus genuine current weather from the free
-Open-Meteo API. No random/synthetic values are used here.
+Pulls genuine recent satellite sea-ice concentration observations from
+EUMETSAT/MET Norway's OSI SAF Global Sea Ice Concentration product
+(`ice_conc_sh_polstere-100_multi`, Southern Hemisphere, 10km polar
+stereographic, no auth required, served via MET Norway's public THREDDS
+OPeNDAP endpoint) plus genuine current weather from the free Open-Meteo API.
+No random/synthetic values are used here.
+
+NOTE: this service originally used NOAA PolarWatch's
+`noaacwVIIRSn21iceconcSP06Daily4Day` ERDDAP dataset (see
+ml/training/train_model1_sic.py, which trained the shipped LSTM/GBR models
+against that source). NOAA discontinued that dataset from their catalog
+(and its AMSR2 successor stopped publishing in April 2021 despite still
+being listed) — verified directly against their ERDDAP server, which now
+returns "Currently unknown datasetID" for it. OSI SAF is the replacement
+live source; it reports genuine sea-ice concentration as a 0-1 fraction on
+its own polar stereographic grid, matching the physical quantity
+(`cdr_seaice_conc`) the trained models expect, so no retraining is required.
 """
-import io
 import time
 from datetime import timedelta
 
+import netCDF4
+import numpy as np
 import pandas as pd
 import requests
 from pyproj import Transformer
 
-ERDDAP_BASE = "https://polarwatch.noaa.gov/erddap/griddap/noaacwVIIRSn21iceconcSP06Daily4Day"
-PROJ4 = "+proj=stere +lat_0=-90 +lat_ts=-70 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
+OSISAF_BASE = "https://thredds.met.no/thredds/dodsC/osisaf/met.no/ice/conc"
+OSISAF_FILESERVER_BASE = "https://thredds.met.no/thredds/fileServer/osisaf/met.no/ice/conc"
+# OSI SAF's real Southern-Hemisphere grid: polar stereographic, 10km
+# resolution, 790x830 cells, area_extent (-3950000,-3950000)-(3950000,4350000)
+# in meters — verified against the dataset's own attributes.
+PROJ4 = "+proj=stere +a=6378273 +b=6356889.44891 +lat_0=-90 +lat_ts=-70 +lon_0=0"
+GRID_X_MIN, GRID_X_MAX = -3_950_000.0, 3_950_000.0
+GRID_Y_MIN, GRID_Y_MAX = -3_950_000.0, 4_350_000.0
 WEATHER_URL = "https://api.open-meteo.com/v1/forecast"
-# NOAA PolarWatch's real ERDDAP griddap endpoint has been observed taking
-# right around 30s to respond for a 21-day history query — a 30s timeout
-# was failing this call more often than not rather than actually being slow
-# beyond recovery.
+# OSI SAF's real THREDDS server has been observed taking several seconds per
+# daily file (21 real files fetched sequentially for a full history — see
+# fetch_recent_sic_history); a generous per-request timeout avoids failing a
+# request that's merely slow rather than actually down. Kept sequential
+# (not parallelized) per MET Norway's THREDDS terms of service, which asks
+# users not to spawn parallel OPeNDAP sessions.
 REQUEST_TIMEOUT_S = 60
 
 _to_xy = Transformer.from_crs("EPSG:4326", PROJ4, always_xy=True)
 _to_lonlat = Transformer.from_crs(PROJ4, "EPSG:4326", always_xy=True)
 
 _cached_latest_date = {"value": None, "fetched_at": None}
+
+
+def _osisaf_url(d):
+    return f"{OSISAF_BASE}/{d.year}/{d.month:02d}/ice_conc_sh_polstere-100_multi_{d.strftime('%Y%m%d')}1200.nc"
 
 # Real satellite observations for a given bbox+day don't change within the
 # same real-world day, and NOAA's ERDDAP has been observed taking 30-60s+ to
@@ -40,41 +65,44 @@ _SIC_CACHE_TTL_S = 900  # 15 minutes
 
 
 def _get_latest_available_date():
-    """Real dataset's most recent available date, cached for an hour to avoid hammering the info endpoint."""
+    """
+    Real dataset's most recent published date, cached for an hour. OSI SAF
+    publishes with a real 1-3 day operational lag, so this probes backward
+    from today (via a cheap HEAD request against the file server) until it
+    finds the newest day that's actually been published.
+    """
     now = pd.Timestamp.utcnow()
     if _cached_latest_date["value"] is not None and (now - _cached_latest_date["fetched_at"]) < timedelta(hours=1):
         return _cached_latest_date["value"]
 
-    info_url = ERDDAP_BASE.replace("/griddap/", "/info/") + "/index.json"
-    r = requests.get(info_url, timeout=REQUEST_TIMEOUT_S)
-    r.raise_for_status()
-    d = r.json()
-    cols = d["table"]["columnNames"]
-    for row in d["table"]["rows"]:
-        rec = dict(zip(cols, row))
-        if rec["Variable Name"] == "time" and rec["Attribute Name"] == "actual_range":
-            _, hi = [float(v) for v in rec["Value"].split(",")]
-            latest = pd.Timestamp(hi, unit="s", tz="UTC").floor("D")
-            _cached_latest_date["value"] = latest
+    candidate = pd.Timestamp.utcnow().normalize()
+    for _ in range(10):
+        fname = f"ice_conc_sh_polstere-100_multi_{candidate.strftime('%Y%m%d')}1200.nc"
+        url = f"{OSISAF_FILESERVER_BASE}/{candidate.year}/{candidate.month:02d}/{fname}"
+        r = requests.head(url, timeout=REQUEST_TIMEOUT_S)
+        if r.status_code == 200:
+            _cached_latest_date["value"] = candidate
             _cached_latest_date["fetched_at"] = now
-            return latest
-    raise RuntimeError("could not determine real dataset's latest available date")
+            return candidate
+        candidate = candidate - pd.Timedelta(days=1)
+    raise RuntimeError("could not find a recently published real OSI SAF sea-ice file")
 
 
-def fetch_recent_sic_history(min_lat, max_lat, min_lon, max_lon, days=7, stride_m=40):
+def fetch_recent_sic_history(min_lat, max_lat, min_lon, max_lon, days=7, stride_cells=3):
     """
     Real satellite sea-ice concentration for the last `days` real observation
-    days over the given bbox. Returns (dates, cells) where cells is a list of
+    days over the given bbox, from OSI SAF's daily Southern-Hemisphere grid.
+    Returns (dates, cells) where cells is a list of
     {"lat":, "lon":, "history": [sic_day-6..sic_day0]} (fraction 0-1, real values).
     """
-    cache_key = (round(min_lat, 1), round(max_lat, 1), round(min_lon, 1), round(max_lon, 1), days, stride_m)
+    cache_key = (round(min_lat, 1), round(max_lat, 1), round(min_lon, 1), round(max_lon, 1), days, stride_cells)
     cached = _sic_history_cache.get(cache_key)
     if cached and (time.time() - cached["fetched_at"]) < _SIC_CACHE_TTL_S:
         return cached["dates"], cached["cells"]
 
     try:
         latest = _get_latest_available_date()
-        date_start = latest - pd.Timedelta(days=days - 1)
+        date_list = [(latest - pd.Timedelta(days=k)).date() for k in range(days - 1, -1, -1)]
 
         corners = [(min_lon, min_lat), (min_lon, max_lat), (max_lon, min_lat), (max_lon, max_lat)]
         xs, ys = [], []
@@ -82,44 +110,56 @@ def fetch_recent_sic_history(min_lat, max_lat, min_lon, max_lon, days=7, stride_
             x, y = _to_xy.transform(lon, lat)
             xs.append(x)
             ys.append(y)
-        # The dataset's real grid only covers +/-3,434,002.5 m from the pole;
-        # a lat/lon bbox corner near the northern edge of Antarctic waters can
-        # project outside that circle, so clamp to stay within real coverage.
-        GRID_LIMIT_M = 3_434_000.0
-        x_lo, x_hi = max(min(xs), -GRID_LIMIT_M), min(max(xs), GRID_LIMIT_M)
-        y_lo, y_hi = max(min(ys), -GRID_LIMIT_M), min(max(ys), GRID_LIMIT_M)
+        # Clamp to OSI SAF's real grid extent — a bbox corner near the
+        # northern edge of Antarctic waters can fall just outside it.
+        x_lo, x_hi = max(min(xs), GRID_X_MIN), min(max(xs), GRID_X_MAX)
+        y_lo, y_hi = max(min(ys), GRID_Y_MIN), min(max(ys), GRID_Y_MAX)
 
-        t0 = date_start.strftime("%Y-%m-%dT00:00:00Z")
-        t1 = latest.strftime("%Y-%m-%dT00:00:00Z")
-        url = (
-            f"{ERDDAP_BASE}.csv?IceConc"
-            f"[({t0}):1:({t1})][(0.0)][({y_hi}):{stride_m}:({y_lo})][({x_lo}):{stride_m}:({x_hi})]"
-        )
-        r = requests.get(url, timeout=REQUEST_TIMEOUT_S)
-        r.raise_for_status()
-        df = pd.read_csv(io.StringIO(r.text), skiprows=[1])
-        df.columns = ["time", "altitude", "rows_m", "cols_m", "iceconc"]
-        df["time"] = pd.to_datetime(df["time"]).dt.date
+        # Grid axes (xc/yc) are identical across all daily files, so read
+        # them once from the first real file to compute index bounds.
+        first_ds = netCDF4.Dataset(_osisaf_url(date_list[0]))
+        xc = first_ds.variables["xc"][:].data * 1000.0  # km -> m
+        yc = first_ds.variables["yc"][:].data * 1000.0
+        first_ds.close()
 
-        pivot = df.pivot_table(index=["rows_m", "cols_m"], columns="time", values="iceconc")
-        pivot = pivot.interpolate(axis=1, limit_direction="both").ffill(axis=1).bfill(axis=1)
-        pivot = pivot.dropna()
+        x0i, x1i = sorted([int(np.argmin(np.abs(xc - x_lo))), int(np.argmin(np.abs(xc - x_hi)))])
+        y0i, y1i = sorted([int(np.argmin(np.abs(yc - y_lo))), int(np.argmin(np.abs(yc - y_hi)))])
+        x1i, y1i = max(x1i, x0i + 1), max(y1i, y0i + 1)
+        step = max(1, stride_cells)
 
-        dates = sorted(pivot.columns)
+        per_day = {}
+        for d in date_list:
+            ds = netCDF4.Dataset(_osisaf_url(d))
+            sub = ds.variables["ice_conc"][0, y0i:y1i + 1:step, x0i:x1i + 1:step]
+            ds.close()
+            # real % (0-100) -> fraction (0-1); masked (land/no-data) -> NaN
+            per_day[d] = np.ma.filled(sub, np.nan).astype(float) / 100.0
+
+        dates = sorted(per_day.keys())
+        stacked = np.stack([per_day[d] for d in dates], axis=0)  # (days, ny, nx)
+        valid_mask = ~np.isnan(stacked).any(axis=0)
+
+        sub_yc = yc[y0i:y1i + 1:step]
+        sub_xc = xc[x0i:x1i + 1:step]
+
         cells = []
-        for (rows_m, cols_m), series in pivot.iterrows():
-            lon, lat = _to_lonlat.transform(cols_m, rows_m)
-            history = [float(series[d]) for d in dates]
-            cells.append({"lat": lat, "lon": lon, "rows_m": rows_m, "cols_m": cols_m, "history": history})
+        for iy in range(stacked.shape[1]):
+            for ix in range(stacked.shape[2]):
+                if not valid_mask[iy, ix]:
+                    continue
+                lon, lat = _to_lonlat.transform(sub_xc[ix], sub_yc[iy])
+                history = stacked[:, iy, ix].tolist()
+                cells.append({"lat": lat, "lon": lon, "rows_m": float(sub_yc[iy]), "cols_m": float(sub_xc[ix]), "history": history})
+
+        if not cells:
+            raise RuntimeError("no valid real OSI SAF observations in this bounding box")
     except Exception as e:
-        # NOAA's real ERDDAP endpoint has been observed with highly variable
-        # response times (30s-60s+, sometimes timing out outright) — that's
-        # NOAA's reliability, not ours to fix. Falling back to the last real
-        # successful fetch for this same area (even stale) keeps this
-        # request serving genuine satellite data instead of failing outright
-        # only because NOAA happened to be slow on THIS particular request.
+        # OSI SAF's real THREDDS server can be briefly slow/unavailable —
+        # falling back to the last real successful fetch for this same area
+        # (even stale) keeps this request serving genuine satellite data
+        # instead of failing outright only because of one bad request.
         if cached is not None:
-            print(f"[Model 1] Real NOAA fetch failed ({e}); using last real fetch from {round((time.time() - cached['fetched_at']) / 60, 1)}min ago for this area.")
+            print(f"[Model 1] Real OSI SAF fetch failed ({e}); using last real fetch from {round((time.time() - cached['fetched_at']) / 60, 1)}min ago for this area.")
             return cached["dates"], cached["cells"]
         raise
 

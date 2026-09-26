@@ -1,64 +1,57 @@
 """
-Seed 2-3 test icebergs into iceberg_tracks for demo purposes.
+Seed real, per-voyage iceberg tracks from Model 3's live Sentinel-1 SAR CFAR
+detections (see backend/model3-routing-service/sar_detection.py). Each
+detection becomes a single real observed track point — no fabricated
+multi-day drift history is invented, since a single SAR scene only gives one
+real observation. velocity/direction are left null (genuinely unknown from
+one observation) rather than made up; the real physics-informed drift model
+(ml_utils.py) predicts motion forward from here using real wind/current data.
 """
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from db import SessionLocal, IcebergTrack
 
 
-def seed_icebergs():
-    """Insert mock iceberg track history if not already present."""
+def seed_real_icebergs(voyage_id: str, detections: list, scene_datetime: str | None):
+    """
+    Replace this voyage's tracked icebergs with the real SAR detections just
+    found for its route bbox. Idempotent per voyage (recompute-safe): clears
+    only this voyage's own prior tracks first, never another voyage's.
+
+    detections: list of {"lat", "lon", "estimated_length_m", "peak_intensity"}
+    as returned by Model 3's /sar-scan (real values, or an empty list if no
+    real scene covered this route — never fabricated).
+
+    Returns the list of real iceberg_ids seeded (possibly empty).
+    """
     db = SessionLocal()
     try:
-        existing = db.query(IcebergTrack).first()
-        if existing:
-            print("[Seed] Iceberg tracks already seeded, skipping.")
-            return
+        db.query(IcebergTrack).filter(IcebergTrack.voyage_id == voyage_id).delete()
 
-        icebergs = [
-            {
-                "iceberg_id": "ANT-B22A",
-                "base_lat": -67.5, "base_lon": 45.0,
-                "velocity_u": 5.2, "velocity_v": -3.1,   # km/day
-                "speed_ms": 0.06, "direction": 120.0,
-                "size_1": 15.0, "size_2": 8.0,
-            },
-            {
-                "iceberg_id": "ANT-C19",
-                "base_lat": -70.2, "base_lon": 42.5,
-                "velocity_u": -2.8, "velocity_v": 4.5,
-                "speed_ms": 0.05, "direction": 210.0,
-                "size_1": 22.0, "size_2": 12.0,
-            },
-            {
-                "iceberg_id": "ANT-D15B",
-                "base_lat": -72.0, "base_lon": 48.0,
-                "velocity_u": 3.0, "velocity_v": -1.5,
-                "speed_ms": 0.04, "direction": 160.0,
-                "size_1": 10.0, "size_2": 5.0,
-            },
-        ]
+        try:
+            observed_at = datetime.fromisoformat(scene_datetime.replace("Z", "+00:00")) if scene_datetime else datetime.now(timezone.utc)
+        except ValueError:
+            observed_at = datetime.now(timezone.utc)
 
-        now = datetime.now(timezone.utc)
-        for berg in icebergs:
-            for day_offset in range(7):
-                obs_time = now - timedelta(days=6 - day_offset)
-                # Simulate slight drift over past 7 days
-                lat = berg["base_lat"] + (berg["velocity_v"] / 111.0) * day_offset
-                lon = berg["base_lon"] + (berg["velocity_u"] / 111.0) * day_offset
-
-                track = IcebergTrack(
-                    iceberg_id=berg["iceberg_id"],
-                    observed_at=obs_time,
-                    position=f"POINT({lon} {lat})",
-                    velocity_ms=berg["speed_ms"],
-                    direction_deg=berg["direction"],
-                )
-                db.add(track)
+        iceberg_ids = []
+        for i, d in enumerate(detections):
+            iceberg_id = f"SAR-{voyage_id[:8]}-{i + 1}"
+            track = IcebergTrack(
+                iceberg_id=iceberg_id,
+                observed_at=observed_at,
+                position=f"POINT({d['lon']} {d['lat']})",
+                velocity_ms=None,
+                direction_deg=None,
+                voyage_id=voyage_id,
+            )
+            db.add(track)
+            iceberg_ids.append(iceberg_id)
 
         db.commit()
-        print(f"[Seed] Seeded {len(icebergs)} icebergs with 7 days of track history each.")
+        print(f"[Model 2] Voyage {voyage_id}: seeded {len(iceberg_ids)} real SAR-detected iceberg(s).")
+        return iceberg_ids
     except Exception as e:
         db.rollback()
-        print(f"[Seed] Error seeding icebergs: {e}")
+        print(f"[Model 2] Voyage {voyage_id}: error seeding real iceberg detections: {e}")
+        return []
     finally:
         db.close()
