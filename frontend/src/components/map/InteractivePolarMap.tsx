@@ -108,6 +108,7 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const popupRef = useRef<any>(null);
+  const isInitialStyleEffectRun = useRef(true);
 
   const [activeTileType, setActiveTileType] = useState<TileStyleType>('satellite');
   const [isGlobe, setIsGlobe] = useState<boolean>(true);
@@ -139,16 +140,42 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
         attributionControl: false,
       });
 
-      if (typeof map.setProjection === 'function') {
-        try {
-          map.setProjection({ type: 'globe' });
-        } catch {
-          // Ignore projection unsupported errors
-        }
-      }
-
       map.on('load', () => {
+        // Add our own sources/layers FIRST, while the style is definitely
+        // loaded (we're inside its own 'load' handler). Two real bugs
+        // lived on this exact ordering:
+        //
+        // 1. setProjection('globe') used to be called synchronously right
+        //    after the map's construction, before its style had even
+        //    started loading — that left the map's internal "loaded"
+        //    bookkeeping permanently stuck (map.loaded()/'idle' never
+        //    fired again for the rest of the session), independent of
+        //    which basemap style was used.
+        //
+        // 2. Moving it to run first inside THIS handler instead (still
+        //    before initMapLayers) only traded one bug for another:
+        //    switching to globe projection kicks off its own async style
+        //    adjustment, which made map.isStyleLoaded() report false for
+        //    a moment even though we're inside 'load' — and
+        //    initMapLayers()'s own first line is `if
+        //    (!map.isStyleLoaded()) return;`, so it silently added NOTHING
+        //    (confirmed: map.getStyle().layers held only the base
+        //    raster layer, none of ours) while overall map.loaded() still
+        //    eventually became true, masking the failure.
+        //
+        // Doing our own layer setup FIRST and only THEN touching
+        // projection avoids both: by the time setProjection can invalidate
+        // isStyleLoaded(), our sources/layers already exist.
         initMapLayers(map);
+
+        if (typeof map.setProjection === 'function') {
+          try {
+            map.setProjection({ type: 'globe' });
+          } catch {
+            // Ignore projection unsupported errors
+          }
+        }
+
         setMapLoaded(true);
 
         if (activeWaypoints.length > 0) {
@@ -288,6 +315,28 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
   // Handle Basemap Style Switcher
   useEffect(() => {
     if (!mapRef.current || mapError) return;
+
+    // This effect's dependency on `activeTileType` means it also fires once
+    // on mount, when the map already has this exact style from its own
+    // constructor call (see the map-creation effect above) and is still
+    // loading it for the FIRST time. Calling map.setStyle() again here in
+    // that moment made MapLibre abandon and "rebuild the style from
+    // scratch" mid-load (visible as a real console warning in every test
+    // run, local and deployed) — a race whose outcome depends on network
+    // timing: the rebuild's own style.load handler below closes over
+    // `activeWaypoints` from THIS render only and never re-fires after
+    // that, so if it resolves after the real route data has already
+    // arrived and been drawn by the "Update Sources" effect further down,
+    // it silently re-clears the route right after drawing it — no error,
+    // just an empty map, exactly what a fresh page load surfaced. Skip the
+    // switch entirely on this first run; only a genuine later change to
+    // activeTileType (the user clicking a different basemap button) should
+    // ever call setStyle again.
+    if (isInitialStyleEffectRun.current) {
+      isInitialStyleEffectRun.current = false;
+      return;
+    }
+
     const map = mapRef.current;
     map.setStyle(BASEMAP_STYLES[activeTileType]);
 
