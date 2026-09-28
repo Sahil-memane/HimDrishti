@@ -20,12 +20,36 @@ MODEL1_URL = os.getenv("MODEL1_URL", "http://localhost:8001")
 MODEL2_URL = os.getenv("MODEL2_URL", "http://localhost:8002")
 MODEL3_URL = os.getenv("MODEL3_URL", "http://localhost:8003")
 
+import time
+
 try:
     from google.auth.transport.requests import Request as _GoogleAuthRequest
     from google.oauth2 import id_token as _google_id_token
     _GOOGLE_AUTH_AVAILABLE = True
 except ImportError:
     _GOOGLE_AUTH_AVAILABLE = False
+
+# Cloud Run always sets K_SERVICE on the deployed instance itself (part of
+# its documented runtime contract, distinct from MODEL1_URL etc. which are
+# just env vars we chose to set) — this is the cheap, explicit way to know
+# whether a real metadata server exists at all, instead of discovering it
+# by trying and failing. Without this gate, a bare try/except around
+# fetch_id_token "worked" locally in the sense that it didn't crash or add
+# auth headers — but google-auth's own metadata-server lookup retries 3
+# times with backoff before giving up on each individual call, silently
+# adding several real seconds of latency to EVERY Model 1/2/3 call in local
+# docker compose (confirmed: visible in gateway logs on every single
+# outbound request, and enough cumulative delay to blow past a 120s test
+# timeout that used to comfortably pass).
+_ON_CLOUD_RUN = bool(os.getenv("K_SERVICE"))
+
+# Identity tokens are valid for ~1 hour; refetching one on every single
+# outbound call (as the first version of this function did) adds an avoidable
+# metadata-server round trip to every request even on real Cloud Run, where
+# fetch_id_token does succeed. Cache per-audience URL, refresh a few minutes
+# early to be safe.
+_ID_TOKEN_CACHE: dict[str, tuple[str, float]] = {}
+_ID_TOKEN_TTL_S = 50 * 60
 
 
 def _auth_headers_for(url: str) -> dict:
@@ -37,15 +61,21 @@ def _auth_headers_for(url: str) -> dict:
     still has to present that token itself; Cloud Run does not do this
     automatically for you.
 
-    fetch_id_token talks to the GCE/Cloud Run metadata server, which only
-    exists when actually running on GCP. Locally (docker compose), there is
-    no metadata server, so this raises and we return no header — unchanged
-    behavior, since the local model services never require auth anyway.
+    Locally (docker compose) there is no metadata server and the local
+    model services never require auth anyway, so this returns no header
+    immediately — see _ON_CLOUD_RUN above for why that's checked explicitly
+    rather than discovered via a failing call.
     """
-    if not _GOOGLE_AUTH_AVAILABLE:
+    if not _GOOGLE_AUTH_AVAILABLE or not _ON_CLOUD_RUN:
         return {}
+
+    cached = _ID_TOKEN_CACHE.get(url)
+    if cached and cached[1] > time.time():
+        return {"Authorization": f"Bearer {cached[0]}"}
+
     try:
         token = _google_id_token.fetch_id_token(_GoogleAuthRequest(), url)
+        _ID_TOKEN_CACHE[url] = (token, time.time() + _ID_TOKEN_TTL_S)
         return {"Authorization": f"Bearer {token}"}
     except Exception:
         return {}
