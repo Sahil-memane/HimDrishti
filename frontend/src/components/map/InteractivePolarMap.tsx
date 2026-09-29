@@ -203,30 +203,59 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
 
         const isStart = props.isStart;
         const isEnd = props.isEnd;
+
+        const riskScore = props.segment_risk_score != null ? Number(props.segment_risk_score) : null;
+        const riskPct = riskScore != null ? (riskScore * 100).toFixed(1) : null;
+        const riskColor = riskScore == null ? '#bbc9cf' : riskScore <= 0.2 ? '#39ff14' : riskScore <= 0.45 ? '#ffcc00' : '#ff3333';
+        const riskLabel = riskScore == null ? 'N/A' : riskScore <= 0.2 ? 'LOW' : riskScore <= 0.45 ? 'MODERATE' : 'HIGH';
+
+        const iceRisk = props.ice_risk != null ? (Number(props.ice_risk) * 100).toFixed(1) : null;
+        const icebergRisk = props.iceberg_risk != null ? (Number(props.iceberg_risk) * 100).toFixed(1) : null;
+        const weatherRisk = props.weather_risk != null ? (Number(props.weather_risk) * 100).toFixed(1) : null;
+
         const popupHtml = `
           <div style="
-            background: rgba(7, 20, 32, 0.94);
+            background: rgba(7, 20, 32, 0.96);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(0, 218, 243, 0.4);
             border-radius: 10px;
-            padding: 12px 14px;
+            padding: 14px 16px;
             color: #d7e4f5;
             font-family: 'Inter', sans-serif;
-            min-width: 210px;
+            min-width: 250px;
+            max-width: 300px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
           ">
-            <div style="display: flex; justify-space: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 6px; margin-bottom: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 6px; margin-bottom: 10px;">
               <span style="font-weight: 800; font-size: 13px; color: #00daf3;">WAYPOINT #${String(props.sequence_no).padStart(3, '0')}</span>
-              <span style="font-family: monospace; font-size: 10px; color: #839493;">${isStart ? 'ORIGIN' : isEnd ? 'DEST' : 'WAYPOINT'}</span>
+              <span style="font-family: monospace; font-size: 10px; color: #839493; padding: 2px 6px; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px;">${isStart ? 'ORIGIN' : isEnd ? 'DEST' : 'TRANSIT'}</span>
             </div>
             <div style="font-family: monospace; font-size: 11px; margin-bottom: 4px;">
               POSITION: <strong style="color: #fff;">${latToDegMin(coordinates[1])} ${lonToDegMin(coordinates[0])}</strong>
             </div>
-            <div style="font-family: monospace; font-size: 10px; margin-bottom: 4px; color: #839493;">
-              ${coordinates[1].toFixed(4)}, ${coordinates[0].toFixed(4)}
+            <div style="font-family: monospace; font-size: 10px; margin-bottom: 8px; color: #839493;">
+              ${coordinates[1].toFixed(4)}\u00b0, ${coordinates[0].toFixed(4)}\u00b0
             </div>
             ${props.eta ? `<div style="font-size: 11px; margin-bottom: 4px; color: #b9cac9;">ETA: <strong style="color: #fff;">${props.eta}</strong></div>` : ''}
-            ${props.cumulative_fuel_l !== undefined ? `<div style="font-size: 11px; margin-bottom: 8px; color: #b9cac9;">Fuel Burn: <strong style="color: #35d4ff;">${Number(props.cumulative_fuel_l).toLocaleString()} L</strong></div>` : ''}
+            ${props.cumulative_fuel_l !== undefined ? `<div style="font-size: 11px; margin-bottom: 8px; color: #b9cac9;">Cumulative Fuel: <strong style="color: #35d4ff;">${Number(props.cumulative_fuel_l).toLocaleString()} L</strong></div>` : ''}
+            ${riskPct != null ? `
+              <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px; margin-top: 4px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <span style="font-size: 9px; font-weight: 700; color: #bbc9cf; text-transform: uppercase; letter-spacing: 0.5px;">Segment Risk</span>
+                  <span style="font-family: monospace; font-weight: 700; font-size: 12px; color: ${riskColor};">${riskLabel} (${riskPct}%)</span>
+                </div>
+                <div style="width: 100%; background: #071420; height: 5px; border-radius: 3px; overflow: hidden; margin-bottom: 8px;">
+                  <div style="width: ${Math.min(100, Math.max(5, Number(riskPct)))}%; height: 100%; background: ${riskColor}; border-radius: 3px; box-shadow: 0 0 6px ${riskColor};"></div>
+                </div>
+                ${(iceRisk || icebergRisk || weatherRisk) ? `
+                  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; text-align: center;">
+                    ${iceRisk != null ? `<div style="background: #101d29; padding: 4px; border-radius: 4px; border: 1px solid rgba(60,73,78,0.5);"><div style="font-size: 8px; font-weight: 700; color: #bbc9cf;">ICE</div><div style="font-family: monospace; font-size: 11px; font-weight: 700; color: #00daf3;">${iceRisk}%</div></div>` : ''}
+                    ${icebergRisk != null ? `<div style="background: #101d29; padding: 4px; border-radius: 4px; border: 1px solid rgba(60,73,78,0.5);"><div style="font-size: 8px; font-weight: 700; color: #bbc9cf;">BERG</div><div style="font-family: monospace; font-size: 11px; font-weight: 700; color: #ffaa00;">${icebergRisk}%</div></div>` : ''}
+                    ${weatherRisk != null ? `<div style="background: #101d29; padding: 4px; border-radius: 4px; border: 1px solid rgba(60,73,78,0.5);"><div style="font-size: 8px; font-weight: 700; color: #bbc9cf;">WX</div><div style="font-family: monospace; font-size: 11px; font-weight: 700; color: #b3c6db;">${weatherRisk}%</div></div>` : ''}
+                  </div>
+                ` : ''}
+              </div>
+            ` : ''}
           </div>
         `;
 
@@ -421,11 +450,10 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
     setLayerGroupVisibility(map, [MAP_LAYERS.BATHYMETRY], showBathymetry);
     updateSarQuicklookImage(map, showSarQuicklook, sarBbox, sarImageUrl);
 
-    if (activeWaypoints.length > 0) {
-      const bounds = new MapLibre.LngLatBounds();
-      activeWaypoints.forEach((wp) => bounds.extend([wp.lon, wp.lat]));
-      map.fitBounds(bounds, { padding: 80, maxZoom: 8, duration: 1000 });
-    }
+    // NOTE: No fitBounds here — we only auto-frame on INITIAL map load (inside
+    // the 'load' event handler above). Re-framing every time a layer toggle,
+    // risk-profile, or tab changes is jarring and disrupts the user's pan/zoom.
+    // Use the "FIT ROUTE" button in MapControls for an explicit re-frame.
   }, [waypoints, showSeaIce, showIcebergs, showIcebergDrift, showRiskZones, showBathymetry, showSarQuicklook, sarBbox, sarImageUrl, vesselLat, vesselLon, vesselHeading, vesselSpeed, vesselName, horizonDay, voyageId, mapLoaded, mapError]);
 
   const handleResetAntarctica = () => {
@@ -492,19 +520,19 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
       ) : (
         <div className="h-full w-full z-0 bg-[#040C14] relative overflow-hidden flex items-center justify-center">
           {/* Tactical Radar Grid Lines */}
-          <svg className="absolute inset-0 w-full h-full opacity-30" pointerEvents="none">
+          <svg className="absolute inset-0 w-full h-full opacity-10" pointerEvents="none">
             <defs>
               <radialGradient id="polarGlow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#00daf3" stopOpacity="0.2" />
-                <stop offset="100%" stopColor="#040c14" stopOpacity="0.9" />
+                <stop offset="0%" stopColor="#003a4d" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#040c14" stopOpacity="0.95" />
               </radialGradient>
             </defs>
             <rect width="100%" height="100%" fill="url(#polarGlow)" />
-            <circle cx="50%" cy="50%" r="20%" stroke="#00daf3" strokeWidth="1" strokeDasharray="4,4" fill="none" />
-            <circle cx="50%" cy="50%" r="35%" stroke="#00daf3" strokeWidth="1" strokeDasharray="6,6" fill="none" />
-            <circle cx="50%" cy="50%" r="48%" stroke="#00daf3" strokeWidth="1.5" fill="none" />
-            <line x1="50%" y1="0%" x2="50%" y2="100%" stroke="#00daf3" strokeWidth="0.8" strokeDasharray="4,4" />
-            <line x1="0%" y1="50%" x2="100%" y2="50%" stroke="#00daf3" strokeWidth="0.8" strokeDasharray="4,4" />
+            <circle cx="50%" cy="50%" r="20%" stroke="#1a4a5a" strokeWidth="1" strokeDasharray="4,4" fill="none" />
+            <circle cx="50%" cy="50%" r="35%" stroke="#1a4a5a" strokeWidth="1" strokeDasharray="6,6" fill="none" />
+            <circle cx="50%" cy="50%" r="48%" stroke="#1a4a5a" strokeWidth="1.5" fill="none" />
+            <line x1="50%" y1="0%" x2="50%" y2="100%" stroke="#1a4a5a" strokeWidth="0.8" strokeDasharray="4,4" />
+            <line x1="0%" y1="50%" x2="100%" y2="50%" stroke="#1a4a5a" strokeWidth="0.8" strokeDasharray="4,4" />
           </svg>
 
           {/* Fallback Tactical Route Projection — real waypoints only. Sea-ice,
@@ -591,7 +619,7 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
         showBathymetry={showBathymetry}
         onToggleBathymetry={onToggleBathymetry}
         showSarQuicklook={showSarQuicklook}
-        onToggleSarQuicklook={sarImageUrl ? onToggleSarQuicklook : undefined}
+        onToggleSarQuicklook={onToggleSarQuicklook}
       />
 
       {/* Map Legend Panel */}

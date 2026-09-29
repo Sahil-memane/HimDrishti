@@ -191,6 +191,7 @@ export const LoginPage: React.FC = () => {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
+                    minLength={8}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
@@ -206,6 +207,9 @@ export const LoginPage: React.FC = () => {
                     </span>
                   </button>
                 </div>
+                {mode === 'register' && (
+                  <p className="font-mono text-[10px] text-[#839493] mt-1">Minimum 8 characters</p>
+                )}
               </div>
 
               {/* Submit Button */}

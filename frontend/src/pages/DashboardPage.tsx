@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useVoyageStore } from '../store/useStore';
 import { api, buildModel3Recommendation, getLastVoyageInputs, KNOWN_VESSELS, type Model3Recommendation } from '../services/api';
 import { InteractivePolarMap } from '../components/map/InteractivePolarMap';
-import type { MapWaypoint } from '../components/map/InteractivePolarMap';
 import { DataProvenanceBar } from '../components/layout/DataProvenanceBar';
 
 export const DashboardPage: React.FC = () => {
@@ -24,7 +23,7 @@ export const DashboardPage: React.FC = () => {
   const [selectedProfile, setSelectedProfile] = useState<'safest' | 'balanced' | 'efficient'>(initialProfile);
   const [recalculating, setRecalculating] = useState(false);
   const [activeTab, setActiveTab] = useState<'WHY' | 'RISK' | 'FUEL_ETA' | 'MODELS'>('WHY');
-  const [selectedWp, setSelectedWp] = useState<MapWaypoint | null>(null);
+
   const [isMinimized, setIsMinimized] = useState(false);
 
   const [recalculatingError, setRecalculatingError] = useState<string | null>(null);
@@ -115,7 +114,7 @@ export const DashboardPage: React.FC = () => {
         onToggleBathymetry={(show) => setShowBathymetry(show)}
         onToggleSarQuicklook={(show) => setShowSarQuicklook(show)}
         activeRiskProfile={selectedProfile}
-        onWaypointSelect={(wp) => setSelectedWp(wp)}
+
         className="absolute inset-0 w-full h-full"
       />
 
@@ -166,31 +165,12 @@ export const DashboardPage: React.FC = () => {
           </div>
         )}
 
-        {/* Selected Waypoint Modal / Quick Readout */}
-        {selectedWp && (
-          <div className="pointer-events-auto self-center glass-panel p-4 rounded-xl border border-[#00daf3]/50 bg-[#071420]/95 backdrop-blur-lg shadow-2xl flex items-center gap-6 max-w-lg animate-fadeIn">
-            <div>
-              <div className="font-mono font-bold text-sm text-[#00daf3]">
-                WAYPOINT #{String(selectedWp.sequence_no).padStart(3, '0')} INSPECTED
-              </div>
-              <div className="font-mono text-xs text-white">
-                LAT/LON: {selectedWp.lat.toFixed(4)}, {selectedWp.lon.toFixed(4)}
-              </div>
-              {selectedWp.eta && <div className="text-xs text-[#bbc9cf]">ETA: {selectedWp.eta}</div>}
-            </div>
-            <button
-              onClick={() => setSelectedWp(null)}
-              className="text-[#bbc9cf] hover:text-white text-xs uppercase font-mono border border-white/20 px-2 py-1 rounded cursor-pointer"
-            >
-              CLOSE
-            </button>
-          </div>
-        )}
+
 
         {/* Bottom Row Controls */}
-        <div className="flex flex-col lg:flex-row justify-between items-end gap-4 pointer-events-auto w-full">
+        <div className="flex flex-col lg:flex-row justify-between items-end gap-4 pointer-events-none w-full">
           {/* Active Route Metrics */}
-          <div className="glass-panel rounded-xl p-4 md:p-5 w-full lg:w-80 shadow-2xl flex flex-col gap-3 border border-[#00daf3]/30 bg-[#071420]/90 backdrop-blur-md">
+          <div className="pointer-events-auto glass-panel rounded-xl p-4 md:p-5 w-full lg:w-80 shadow-2xl flex flex-col gap-3 border border-[#00daf3]/30 bg-[#071420]/90 backdrop-blur-md">
             <div className="flex justify-between items-center border-b border-[#3c494e]/40 pb-2">
               <h2 className="font-bold text-base text-[#00daf3]">Active Route</h2>
               <span className="px-2 py-0.5 rounded bg-[#00daf3]/10 border border-[#00daf3]/30 text-[#00daf3] font-bold text-[10px] tracking-widest flex items-center gap-1">
@@ -246,7 +226,7 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           {/* Model 3 Comprehensive AI Rationale & Optimization Card (With Minimize Button) */}
-          <div className="glass-panel rounded-xl p-4 md:p-5 w-full lg:w-[480px] shadow-2xl flex flex-col gap-3 border border-[#00daf3]/40 bg-[#071420]/95 backdrop-blur-xl transition-all duration-300">
+          <div className="pointer-events-auto glass-panel rounded-xl p-4 md:p-5 w-full lg:w-[480px] shadow-2xl flex flex-col gap-3 border border-[#00daf3]/40 bg-[#071420]/95 backdrop-blur-xl transition-all duration-300">
             <div className="flex justify-between items-center border-b border-[#3c494e]/40 pb-2">
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-xs text-[#bbc9cf] uppercase tracking-wider">

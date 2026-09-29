@@ -76,3 +76,23 @@
   background: #00daf3;
 }
 
+/* ─── MapLibre GL Popup Reset ─────────────────────────────────────────────
+   Strip the default white .maplibregl-popup-content box so our custom dark
+   HTML renders cleanly with no white background or drop-shadow behind it.
+*/
+.himdrishti-popup .maplibregl-popup-content {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* Hide the arrow/tip pointer */
+.himdrishti-popup .maplibregl-popup-tip {
+  display: none !important;
+}
+
+.himdrishti-popup {
+  z-index: 10 !important;
+}

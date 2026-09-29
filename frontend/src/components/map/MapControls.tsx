@@ -64,7 +64,7 @@ export const MapControls: React.FC<MapControlsProps> = ({
     <>
       {/* Primary Top-Left Map Control Toolbar */}
       <div className="absolute top-4 left-4 z-20 flex flex-wrap items-center gap-2 pointer-events-auto max-w-[calc(100%-6rem)]">
-        {/* Tile Layer Switcher */}
+        {/* Tile Layer Switcher — satellite only (dark/voyager removed) */}
         <div className="glass-panel p-1 rounded-lg border border-[#00daf3]/30 flex items-center bg-[#071420]/90 backdrop-blur-md shadow-xl">
           <button
             type="button"
@@ -78,34 +78,6 @@ export const MapControls: React.FC<MapControlsProps> = ({
           >
             <span className="material-symbols-outlined text-[14px]">satellite_alt</span>
             <span className="hidden sm:inline">SATELLITE</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onTileTypeChange('carto-dark')}
-            className={`px-2.5 py-1 rounded text-xs font-mono font-bold transition-all flex items-center gap-1 cursor-pointer ${
-              activeTileType === 'carto-dark'
-                ? 'bg-[#00daf3] text-[#002020] shadow-[0_0_8px_rgba(0,218,243,0.5)]'
-                : 'text-[#bbc9cf] hover:text-white'
-            }`}
-            title="Tactical Dark Basemap"
-          >
-            <span className="material-symbols-outlined text-[14px]">dark_mode</span>
-            <span className="hidden sm:inline">DARK</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onTileTypeChange('carto-voyager')}
-            className={`px-2.5 py-1 rounded text-xs font-mono font-bold transition-all flex items-center gap-1 cursor-pointer ${
-              activeTileType === 'carto-voyager'
-                ? 'bg-[#00daf3] text-[#002020] shadow-[0_0_8px_rgba(0,218,243,0.5)]'
-                : 'text-[#bbc9cf] hover:text-white'
-            }`}
-            title="Voyager Basemap"
-          >
-            <span className="material-symbols-outlined text-[14px]">explore</span>
-            <span className="hidden sm:inline">VOYAGER</span>
           </button>
         </div>
 

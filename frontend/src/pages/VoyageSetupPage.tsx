@@ -1,7 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, buildModel3Recommendation, type VoyageCreatePayload } from '../services/api';
 import { useVoyageStore, useAlertStore } from '../store/useStore';
+
+import shipMp4 from '../loading/ship.mp4';
+import imageMp4 from '../loading/image.mp4';
+import anchorMp4 from '../loading/anchor_animation.mp4';
+
+const LOADING_STAGES = [
+  { video: shipMp4, text: 'LOADING VESSEL DATA & TELEMETRY...' },
+  { video: imageMp4, text: 'LOADING SAR IMAGERY & INTEGRATING DATA...' },
+  { video: imageMp4, text: 'SEA ICE FORECASTING...' },
+  { video: anchorMp4, text: 'CALCULATING ICEBERG TRAJECTORIES...' },
+  { video: anchorMp4, text: 'DIJKSTRA & A* SEARCHING FOR OPTIMAL PATH...' },
+];
 
 export const VoyageSetupPage: React.FC = () => {
   const navigate = useNavigate();
@@ -26,8 +38,34 @@ export const VoyageSetupPage: React.FC = () => {
   const [riskProfile, setRiskProfile] = useState<'safest' | 'balanced' | 'efficient'>('balanced');
 
   const [loading, setLoading] = useState(false);
+  const [loadingStage, setLoadingStage] = useState(0);
+  const [stageVisible, setStageVisible] = useState(true);
   const [statusMsg, setStatusMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Cross-fade between loading stages
+  useEffect(() => {
+    if (!loading) return;
+    setLoadingStage(0);
+    setStageVisible(true);
+
+    const STAGE_DURATION = 5000; // 5s per stage
+    const FADE_DURATION = 400;   // 400ms fade-out before switching
+
+    let stage = 0;
+    const advance = () => {
+      // Fade out, then wrap to next stage (loops back to 0 after last)
+      setStageVisible(false);
+      setTimeout(() => {
+        stage = (stage + 1) % LOADING_STAGES.length;
+        setLoadingStage(stage);
+        setStageVisible(true);
+      }, FADE_DURATION);
+    };
+
+    const interval = setInterval(advance, STAGE_DURATION);
+    return () => clearInterval(interval);
+  }, [loading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,8 +131,50 @@ export const VoyageSetupPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6 md:p-10 flex justify-center items-start min-h-screen">
+    <div className="p-6 md:p-10 flex justify-center items-start min-h-screen relative">
       <div className="w-full max-w-5xl glass-panel rounded-xl relative overflow-hidden flex flex-col border border-[#aee9ff]/20 shadow-2xl">
+        {/* Loading Overlay — covers the entire panel with a dark fade */}
+        {loading && (
+          <div
+            style={{ backgroundColor: 'rgba(255,255,255,1)' }}
+            className="absolute inset-0 z-[100] flex flex-col items-center justify-center"
+          >
+            {/* Video — just the animation, no frame/circle decoration */}
+            <div
+              style={{
+                transition: 'opacity 0.4s ease',
+                opacity: stageVisible ? 1 : 0,
+              }}
+              className="flex flex-col items-center gap-6 w-full max-w-xs"
+            >
+              <video
+                key={LOADING_STAGES[loadingStage].video}
+                src={LOADING_STAGES[loadingStage].video}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-44 h-44 object-contain"
+              />
+
+              <p className="text-[#003543] font-mono text-xs tracking-widest text-center uppercase font-semibold">
+                {LOADING_STAGES[loadingStage].text}
+              </p>
+            </div>
+
+            {/* Thin progress bar at bottom */}
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#e2e8f0]">
+              <div
+                className="h-full bg-[#14212d]"
+                style={{
+                  width: `${((loadingStage + 1) / LOADING_STAGES.length) * 100}%`,
+                  transition: 'width 0.6s ease',
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="p-6 md:p-8 border-b border-[#3c494e]/40 flex flex-col bg-[#14212d]/60">
           <h2 className="font-['Manrope'] font-bold text-2xl md:text-3xl text-white">

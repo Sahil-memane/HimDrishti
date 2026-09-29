@@ -20,8 +20,8 @@ export const MapLegend: React.FC<MapLegendProps> = ({
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="absolute top-16 right-4 z-20 pointer-events-auto">
-      <div className="glass-panel p-3 rounded-xl border border-[#00daf3]/30 bg-[#071420]/90 backdrop-blur-md shadow-2xl min-w-[200px] max-w-[240px]">
+    <div className="absolute top-16 right-4 z-20 pointer-events-none">
+      <div className="pointer-events-auto glass-panel p-3 rounded-xl border border-[#00daf3]/30 bg-[#071420]/90 backdrop-blur-md shadow-2xl min-w-[200px] max-w-[240px]">
         <div className="flex justify-between items-center pb-1.5 border-b border-[#3c494e]/40 mb-2">
           <span className="font-bold text-[11px] text-[#00daf3] tracking-widest uppercase flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[14px]">map</span>

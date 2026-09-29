@@ -15,7 +15,7 @@ def get_forecast_data(db, min_lon, min_lat, max_lon, max_lat):
 
 def is_antarctic_land(lat: float, lon: float) -> bool:
     """
-    Accurate geographic landmass boundary detection for Antarctica.
+    Geographic landmass boundary detection for Antarctica.
     Returns True if (lat, lon) is on the Antarctic continental landmass or ice sheet.
     """
     if lat < -78.8:
@@ -27,11 +27,12 @@ def is_antarctic_land(lat: float, lon: float) -> bool:
     while norm_lon < -180:
         norm_lon += 360
 
-    # East Antarctica (0°E to 160°E): Landmass is south of -65.5°S
+    # East Antarctica (0°E to 160°E)
     if 0.0 <= norm_lon <= 160.0:
         if 68.0 <= norm_lon <= 78.0:  # Prydz Bay ocean sector
             return lat <= -69.5
-        return lat <= -65.5
+        # Relaxed from -65.5 to -70 to allow coastal routing outside Prydz Bay
+        return lat <= -70.0
 
     # Ross Sea (160°E to 180° / -180° to -155°): Ocean bay extends down to -78.5°S
     if norm_lon > 160.0 or norm_lon <= -155.0:
@@ -41,13 +42,14 @@ def is_antarctic_land(lat: float, lon: float) -> bool:
 
     # West Antarctica & Marie Byrd Land (-155° to -75°)
     if -155.0 < norm_lon < -75.0:
-        return lat <= -73.0
+        # Relaxed from -73.0 to -74.5
+        return lat <= -75.0
 
     # Antarctic Peninsula (-75° to -55°)
     if -75.0 <= norm_lon <= -55.0:
         if -75.0 <= norm_lon <= -65.0:
-            return lat <= -67.0
-        return lat <= -63.5
+            return lat <= -75.0 # Relaxed from -67.0
+        return lat <= -68.0 # Relaxed from -63.5
 
     # Weddell Sea (-55° to 0°)
     if -55.0 < norm_lon < 0.0:

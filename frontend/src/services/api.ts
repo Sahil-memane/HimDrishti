@@ -1,5 +1,25 @@
 const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
+/**
+ * FastAPI returns 422 validation errors as:
+ * { detail: [{ loc: [...], msg: "...", type: "..." }, ...] }
+ * This helper extracts a human-readable message from that structure.
+ */
+function parseApiError(err: any, fallback: string): string {
+  if (!err || !err.detail) return fallback;
+  if (typeof err.detail === 'string') return err.detail;
+  if (Array.isArray(err.detail)) {
+    return err.detail
+      .map((e: any) => {
+        const field = e.loc?.filter((l: string) => l !== 'body').join('.') || '';
+        const msg = e.msg || 'Validation error';
+        return field ? `${field}: ${msg}` : msg;
+      })
+      .join('; ');
+  }
+  return fallback;
+}
+
 // Token helper
 const getAuthHeaders = (): HeadersInit => {
   const token = localStorage.getItem('himdrishti_token');
@@ -269,7 +289,7 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'Registration failed' }));
-      throw new Error(err.detail || 'Registration failed');
+      throw new Error(parseApiError(err, 'Registration failed'));
     }
     return await res.json();
   },
@@ -282,7 +302,7 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'Login failed' }));
-      throw new Error(err.detail || 'Invalid email or password');
+      throw new Error(parseApiError(err, 'Invalid email or password'));
     }
     const result = await res.json();
     const token = result.access_token;

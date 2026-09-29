@@ -41,4 +41,10 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['maplibre-gl'],
   },
+  server: {
+    watch: {
+      usePolling: true,
+    },
+    host: true,
+  },
 })
