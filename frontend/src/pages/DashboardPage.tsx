@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVoyageStore } from '../store/useStore';
 import { api, buildModel3Recommendation, getLastVoyageInputs, KNOWN_VESSELS, type Model3Recommendation } from '../services/api';
-import { InteractivePolarMap } from '../components/map/InteractivePolarMap';
+import { InteractivePolarMap, type MapWaypoint } from '../components/map/InteractivePolarMap';
 import { DataProvenanceBar } from '../components/layout/DataProvenanceBar';
 
 export const DashboardPage: React.FC = () => {
@@ -22,6 +22,7 @@ export const DashboardPage: React.FC = () => {
   const [showSarQuicklook, setShowSarQuicklook] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<'safest' | 'balanced' | 'efficient'>(initialProfile);
   const [recalculating, setRecalculating] = useState(false);
+  const [fetchingRoute, setFetchingRoute] = useState(false);
   const [activeTab, setActiveTab] = useState<'WHY' | 'RISK' | 'FUEL_ETA' | 'MODELS'>('WHY');
 
   const [isMinimized, setIsMinimized] = useState(false);
@@ -34,6 +35,26 @@ export const DashboardPage: React.FC = () => {
       setSelectedProfile(p === 'low' ? 'safest' : p === 'high' ? 'efficient' : (p as any));
     }
   }, [inputs?.risk_tolerance]);
+
+  // Re-fetch route data on page refresh: store is in-memory only, so
+  // routeData is null after a refresh. If we have an activeVoyageId in
+  // localStorage we can recover the route by fetching it from the API.
+  useEffect(() => {
+    if (routeData || !activeVoyageId || fetchingRoute) return;
+    setFetchingRoute(true);
+    api.getRoute(activeVoyageId)
+      .then((route) => {
+        setRouteData(route);
+        return api.getRouteRecommendation(activeVoyageId).catch(() => null);
+      })
+      .then((recData) => {
+        if (recData?.recommendation) setLlmRecommendation(recData.recommendation as any);
+      })
+      .catch((err) => {
+        console.warn('Failed to re-fetch route on dashboard load:', err);
+      })
+      .finally(() => setFetchingRoute(false));
+  }, [activeVoyageId]);
 
   // Waypoints directly from store routeData
   const waypoints: MapWaypoint[] = routeData?.waypoints || [];

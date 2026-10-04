@@ -38,7 +38,7 @@ const RISK_COLOR_EXPRESSION: any[] = [
  * Initialize all GeoJSON sources and vector/raster layers on the MapLibre instance.
  */
 export function initMapLayers(map: Map): void {
-  if (!map.isStyleLoaded()) return;
+  if (!map.getStyle()) return;
 
   // -1. Bathymetry (real GEBCO seafloor depth) — sits directly above the
   // basemap, below every data overlay, off by default (context layer).
@@ -549,8 +549,8 @@ export function updateRouteGeoJSON(map: Map, waypoints: MapWaypointData[]): void
       ? [
           {
             type: 'Feature',
-            geometry: { type: 'LineString', coordinates: [[waypoints[0].lon, waypoints[0].lat], [waypoints[0].lon, waypoints[0].lat]] },
-            properties: { risk: waypoints[0].segment_risk_score ?? 0 },
+            geometry: { type: 'LineString', coordinates: [[Number(waypoints[0].lon), Number(waypoints[0].lat)], [Number(waypoints[0].lon), Number(waypoints[0].lat)]] },
+            properties: { risk: Number(waypoints[0].segment_risk_score ?? 0) },
           },
         ]
       : waypoints.slice(1).map((wp, i) => {
@@ -559,9 +559,9 @@ export function updateRouteGeoJSON(map: Map, waypoints: MapWaypointData[]): void
             type: 'Feature',
             geometry: {
               type: 'LineString',
-              coordinates: [[prev.lon, prev.lat], [wp.lon, wp.lat]],
+              coordinates: [[Number(prev.lon), Number(prev.lat)], [Number(wp.lon), Number(wp.lat)]],
             },
-            properties: { risk: wp.segment_risk_score ?? 0 },
+            properties: { risk: Number(wp.segment_risk_score ?? 0) },
           };
         });
 
@@ -580,18 +580,18 @@ export function updateRouteGeoJSON(map: Map, waypoints: MapWaypointData[]): void
     type: 'Feature',
     geometry: {
       type: 'Point',
-      coordinates: [wp.lon, wp.lat],
+      coordinates: [Number(wp.lon), Number(wp.lat)],
     },
     properties: {
-      sequence_no: wp.sequence_no,
+      sequence_no: Number(wp.sequence_no),
       isStart: wp.sequence_no === waypoints[0].sequence_no,
       isEnd: wp.sequence_no === waypoints[waypoints.length - 1].sequence_no,
       eta: wp.eta,
-      cumulative_fuel_l: wp.cumulative_fuel_l,
-      segment_risk_score: wp.segment_risk_score,
-      ice_risk: wp.risk_factors?.ice_risk,
-      iceberg_risk: wp.risk_factors?.iceberg_risk,
-      weather_risk: wp.risk_factors?.weather_risk,
+      cumulative_fuel_l: Number(wp.cumulative_fuel_l ?? 0),
+      segment_risk_score: Number(wp.segment_risk_score ?? 0),
+      ice_risk: Number(wp.risk_factors?.ice_risk ?? 0),
+      iceberg_risk: Number(wp.risk_factors?.iceberg_risk ?? 0),
+      weather_risk: Number(wp.risk_factors?.weather_risk ?? 0),
     },
   }));
 

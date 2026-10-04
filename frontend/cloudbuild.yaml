@@ -1,0 +1,30 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-f'
+      - 'Dockerfile.prod'
+      - '--build-arg'
+      - 'VITE_API_BASE_URL=https://api-gateway-1021025943839.asia-south1.run.app/api'
+      - '-t'
+      - 'asia-south1-docker.pkg.dev/himdrishti-509820/himdrishti/frontend:latest'
+      - '.'
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'asia-south1-docker.pkg.dev/himdrishti-509820/himdrishti/frontend:latest']
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'frontend'
+      - '--image'
+      - 'asia-south1-docker.pkg.dev/himdrishti-509820/himdrishti/frontend:latest'
+      - '--region'
+      - 'asia-south1'
+      - '--port'
+      - '8080'
+      - '--allow-unauthenticated'
+      - '--min-instances'
+      - '0'
+      - '--memory'
+      - '256Mi'

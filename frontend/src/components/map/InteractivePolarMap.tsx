@@ -109,11 +109,20 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
   const mapRef = useRef<any>(null);
   const popupRef = useRef<any>(null);
   const isInitialStyleEffectRun = useRef(true);
+  // Always-current waypoints ref so async style.load callbacks (which close
+  // over stale props from when the effect was registered) can still draw the
+  // live route without waiting for a React re-render cycle.
+  const waypointsRef = useRef<MapWaypoint[]>(waypoints);
+  useEffect(() => { waypointsRef.current = waypoints; }, [waypoints]);
 
   const [activeTileType, setActiveTileType] = useState<TileStyleType>('satellite');
   const [isGlobe, setIsGlobe] = useState<boolean>(true);
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
   const [mapError, setMapError] = useState<boolean>(false);
+  // Bumped whenever MapLibre internally reloads its style (e.g. after
+  // setProjection, setStyle) — forces the data-update effect to re-run
+  // so route/waypoint GeoJSON is re-populated on the fresh sources.
+  const [styleVersion, setStyleVersion] = useState<number>(0);
 
   const activeWaypoints: MapWaypoint[] = waypoints;
 
@@ -140,42 +149,36 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
         attributionControl: false,
       });
 
-      map.on('load', () => {
-        // Add our own sources/layers FIRST, while the style is definitely
-        // loaded (we're inside its own 'load' handler). Two real bugs
-        // lived on this exact ordering:
-        //
-        // 1. setProjection('globe') used to be called synchronously right
-        //    after the map's construction, before its style had even
-        //    started loading — that left the map's internal "loaded"
-        //    bookkeeping permanently stuck (map.loaded()/'idle' never
-        //    fired again for the rest of the session), independent of
-        //    which basemap style was used.
-        //
-        // 2. Moving it to run first inside THIS handler instead (still
-        //    before initMapLayers) only traded one bug for another:
-        //    switching to globe projection kicks off its own async style
-        //    adjustment, which made map.isStyleLoaded() report false for
-        //    a moment even though we're inside 'load' — and
-        //    initMapLayers()'s own first line is `if
-        //    (!map.isStyleLoaded()) return;`, so it silently added NOTHING
-        //    (confirmed: map.getStyle().layers held only the base
-        //    raster layer, none of ours) while overall map.loaded() still
-        //    eventually became true, masking the failure.
-        //
-        // Doing our own layer setup FIRST and only THEN touching
-        // projection avoids both: by the time setProjection can invalidate
-        // isStyleLoaded(), our sources/layers already exist.
+      // --- Persistent style.load listener ---
+      // setProjection('globe'), setStyle(), and certain MapLibre internals
+      // can trigger an async style reload that WIPES all custom sources
+      // and layers we previously added. By listening to EVERY style.load
+      // event, we guarantee our layers are always re-created, and we
+      // bump a React state counter so the data-update effect re-runs
+      // to repopulate GeoJSON on the fresh (empty) sources.
+      map.on('style.load', () => {
         initMapLayers(map);
-
-        if (typeof map.setProjection === 'function') {
-          try {
-            map.setProjection({ type: 'globe' });
-          } catch {
-            // Ignore projection unsupported errors
-          }
+        // Immediately re-populate route data using the ref (always current)
+        // so there is no frame where the route is missing after a style reload.
+        // Without this, the sequence is: style.load wipes sources → initMapLayers
+        // adds empty sources → styleVersion bumps → React schedules re-render →
+        // NEXT frame runs data-update effect. During that gap the map is empty.
+        // Using the ref lets us fill the sources synchronously here instead.
+        const liveWps = waypointsRef.current;
+        if (liveWps.length > 0) {
+          updateRouteGeoJSON(map, liveWps);
+          updateRiskZonesGeoJSON(map, true, liveWps);
         }
+        setStyleVersion((v) => v + 1);
+      });
 
+      map.on('load', () => {
+        // The persistent style.load listener above has already run by
+        // this point (style.load fires before load), so layers exist.
+        // We do NOT call setProjection here — the dedicated projection
+        // effect handles it. Calling it here triggers an async style
+        // reload that wipes sources before the update effect can
+        // populate them.
         setMapLoaded(true);
 
         if (activeWaypoints.length > 0) {
@@ -371,9 +374,13 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
 
     const handleStyleLoad = () => {
       initMapLayers(map);
-      updateRouteGeoJSON(map, activeWaypoints);
-      updateRiskZonesGeoJSON(map, showRiskZones, activeWaypoints);
-      updateIcebergsGeoJSON(map, showIcebergs, activeWaypoints);
+      // Use ref for waypoints — this callback closes over props from when
+      // activeTileType changed, but the user's route may have arrived after
+      // that. waypointsRef.current is always the live value.
+      const liveWps = waypointsRef.current;
+      updateRouteGeoJSON(map, liveWps);
+      updateRiskZonesGeoJSON(map, showRiskZones, liveWps);
+      updateIcebergsGeoJSON(map, showIcebergs, liveWps);
       updateVesselGeoJSON(map, vesselLat, vesselLon, vesselHeading, vesselSpeed, vesselName);
       setLayerGroupVisibility(map, [MAP_LAYERS.BATHYMETRY], showBathymetry);
       updateSarQuicklookImage(map, showSarQuicklook, sarBbox, sarImageUrl);
@@ -395,9 +402,18 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
   }, [isGlobe, mapError]);
 
   // Update Map Sources & Layer Visibility when Props Change
+  // `styleVersion` is bumped by the persistent style.load listener every
+  // time MapLibre internally reloads its style (projection change, basemap
+  // switch). That wipes our GeoJSON sources, so we MUST re-populate data.
   useEffect(() => {
     if (!mapRef.current || !mapLoaded || mapError) return;
     const map = mapRef.current;
+
+    // Defensive: if sources were wiped (e.g. async projection style reload
+    // settled between renders), ensure they exist before trying to populate.
+    if (!map.getSource('recommended-route')) {
+      initMapLayers(map);
+    }
 
     const startWp = activeWaypoints[0];
     const currentVesselLat = vesselLat ?? startWp?.lat ?? -60.0;
@@ -454,7 +470,7 @@ export const InteractivePolarMap: React.FC<InteractivePolarMapProps> = ({
     // the 'load' event handler above). Re-framing every time a layer toggle,
     // risk-profile, or tab changes is jarring and disrupts the user's pan/zoom.
     // Use the "FIT ROUTE" button in MapControls for an explicit re-frame.
-  }, [waypoints, showSeaIce, showIcebergs, showIcebergDrift, showRiskZones, showBathymetry, showSarQuicklook, sarBbox, sarImageUrl, vesselLat, vesselLon, vesselHeading, vesselSpeed, vesselName, horizonDay, voyageId, mapLoaded, mapError]);
+  }, [waypoints, showSeaIce, showIcebergs, showIcebergDrift, showRiskZones, showBathymetry, showSarQuicklook, sarBbox, sarImageUrl, vesselLat, vesselLon, vesselHeading, vesselSpeed, vesselName, horizonDay, voyageId, mapLoaded, mapError, styleVersion]);
 
   const handleResetAntarctica = () => {
     if (!mapRef.current || mapError) return;

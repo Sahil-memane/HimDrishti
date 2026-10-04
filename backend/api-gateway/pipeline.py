@@ -273,7 +273,7 @@ def _run_model3_and_finalize(voyage: Voyage, lat_s: float, lon_s: float, lat_d: 
     }
 
     try:
-        r3 = _post_with_fallback(MODEL3_URL, "/route", json_data=payload, timeout=90)
+        r3 = _post_with_fallback(MODEL3_URL, "/route", json_data=payload, timeout=180)
     except Exception as e:
         voyage.status = "cancelled"
         voyage.cancel_reason = f"Route computation failed: {e}"
