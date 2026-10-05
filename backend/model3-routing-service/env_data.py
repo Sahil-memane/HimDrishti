@@ -7,6 +7,7 @@ speed from the free, no-authentication Open-Meteo Weather + Marine APIs,
 sampled over a coarse grid spanning the route's bounding box and assigned
 to each navigation-grid node by nearest neighbor.
 """
+import time
 import requests
 from grid import haversine
 
@@ -14,6 +15,7 @@ WEATHER_URL = "https://api.open-meteo.com/v1/forecast"
 MARINE_URL = "https://marine-api.open-meteo.com/v1/marine"
 REQUEST_TIMEOUT_S = 20
 KMH_TO_KNOTS = 0.539957
+FETCH_ATTEMPTS = 4  # Open-Meteo's free tier intermittently drops TLS connections; one blip must not cancel a voyage
 
 MAX_SAMPLE_POINTS_PER_AXIS = 5  # keeps each batched call small (<=25 locations)
 MARINE_COVERAGE_LAT_LIMIT = 79.5  # Open-Meteo Marine has no data past ~+/-80 deg; clamp to the nearest real point within coverage
@@ -27,6 +29,22 @@ def _sample_grid(min_lat, max_lat, min_lon, max_lon):
     lats = [max(-MARINE_COVERAGE_LAT_LIMIT, min(MARINE_COVERAGE_LAT_LIMIT, lat)) for lat in lats]
     points = {(lat, lon) for lat in lats for lon in lons}  # dedupe: clamping can collapse distinct rows onto one
     return sorted(points)
+
+
+def _get_with_retry(url, params):
+    last_err = None
+    for attempt in range(FETCH_ATTEMPTS):
+        try:
+            r = requests.get(url, params=params, timeout=REQUEST_TIMEOUT_S)
+            if r.status_code == 429 or r.status_code >= 500:
+                raise requests.HTTPError(f"{r.status_code} from {url}")
+            r.raise_for_status()
+            return r
+        except requests.RequestException as e:
+            last_err = e
+            if attempt < FETCH_ATTEMPTS - 1:
+                time.sleep(2 ** attempt)
+    raise last_err
 
 
 def fetch_route_environment(min_lat, max_lat, min_lon, max_lon):
@@ -55,10 +73,8 @@ def fetch_route_environment(min_lat, max_lat, min_lon, max_lon):
         "timezone": "UTC",
     }
 
-    marine_r = requests.get(MARINE_URL, params=marine_params, timeout=REQUEST_TIMEOUT_S)
-    marine_r.raise_for_status()
-    weather_r = requests.get(WEATHER_URL, params=weather_params, timeout=REQUEST_TIMEOUT_S)
-    weather_r.raise_for_status()
+    marine_r = _get_with_retry(MARINE_URL, marine_params)
+    weather_r = _get_with_retry(WEATHER_URL, weather_params)
 
     marine_data = marine_r.json()
     weather_data = weather_r.json()
